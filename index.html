@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>ConvertMD2PDF | Markdown to PDF Converter</title>
 <link rel="icon" type="image/svg+xml" href="icon.svg"/>
 
-<!-- Google Fonts (exact same as site) -->
+<!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lato:wght@400;700&family=Montserrat:wght@400;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet"/>
 
 <!-- marked.js -->
 <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
-<!-- highlight.js (github-dark theme to match dark code blocks) -->
+<!-- highlight.js -->
 <link id="hljs-css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <!-- KaTeX -->
@@ -21,48 +21,110 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
 <!-- Mermaid -->
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
-<!-- html2pdf.js (exact same version as site) -->
+<!-- html2pdf.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<!-- docx.js (for real DOCX export) -->
+<!-- docx.js -->
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 <!-- FileSaver.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <style>
+/* ── CSS Variables (dark theme default) ── */
+:root{
+  --bg-app:#0a0a0b;
+  --bg-surface:#141416;
+  --bg-surface2:#1a1a1d;
+  --bg-editor:#0a0a0b;
+  --bg-preview:#525659;
+  --color-text:#e5e7eb;
+  --color-muted:#a1a1aa;
+  --color-dimmer:#71717a;
+  --color-faint:#52525b;
+  --border:rgba(255,255,255,.08);
+  --border-mid:rgba(255,255,255,.1);
+  --scrollbar-thumb:#3f3f46;
+  --scrollbar-hover:#52525b;
+  --dd-hover:rgba(255,255,255,.07);
+  --tb-hover:rgba(255,255,255,.08);
+  --modal-bg:#1a1a1d;
+  --modal-text:#fafafa;
+  --kbd-bg:#27272a;
+  --kbd-border:#3f3f46;
+  --kbd-pre-bg:#0a0a0b;
+  --toast-bg:#1f2937;
+  --btn-border:rgba(255,255,255,.12);
+  --btn-hover:rgba(255,255,255,.07);
+  --find-bg:#1e1e22;
+  --toc-bg:#141416;
+  --status-bg:#0d0d0f;
+  --editor-placeholder:#3f3f46;
+  --hljs-theme:url(https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css);
+}
+[data-theme="light"]{
+  --bg-app:#f0f0f2;
+  --bg-surface:#f9fafb;
+  --bg-surface2:#ffffff;
+  --bg-editor:#fafafa;
+  --bg-preview:#d9dde0;
+  --color-text:#1f2937;
+  --color-muted:#4b5563;
+  --color-dimmer:#6b7280;
+  --color-faint:#9ca3af;
+  --border:rgba(0,0,0,.09);
+  --border-mid:rgba(0,0,0,.12);
+  --scrollbar-thumb:#d1d5db;
+  --scrollbar-hover:#9ca3af;
+  --dd-hover:rgba(0,0,0,.05);
+  --tb-hover:rgba(0,0,0,.06);
+  --modal-bg:#ffffff;
+  --modal-text:#1f2937;
+  --kbd-bg:#f3f4f6;
+  --kbd-border:#d1d5db;
+  --kbd-pre-bg:#f3f4f6;
+  --toast-bg:#374151;
+  --btn-border:rgba(0,0,0,.15);
+  --btn-hover:rgba(0,0,0,.05);
+  --find-bg:#eef0f3;
+  --toc-bg:#f0f0f2;
+  --status-bg:#f3f4f6;
+  --editor-placeholder:#9ca3af;
+}
+
 /* ── Reset ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{
   font-family:'Inter',system-ui,-apple-system,sans-serif;
-  font-size:14px;color:#1f2937;
-  background:#0a0a0b; /* site's dark bg */
+  font-size:14px;color:var(--color-text);
+  background:var(--bg-app);
   display:flex;flex-direction:column;
 }
+
+/* Visible focus ring for keyboard navigation */
+:focus-visible{outline:2px solid #6366f1;outline-offset:2px;border-radius:3px}
 
 /* ── Nav ── */
 .nav{
   height:56px;display:flex;align-items:center;gap:6px;
   padding:0 20px;
-  background:#0a0a0b;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  flex-shrink:0;
+  background:var(--bg-app);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;flex-wrap:nowrap;
 }
 .nav-logo{
   display:flex;align-items:center;gap:9px;
   font-weight:700;font-size:16px;color:#fafafa;
-  text-decoration:none;margin-right:10px;
+  text-decoration:none;margin-right:10px;flex-shrink:0;
 }
-.nav-logo .ico{
-  width:30px;height:30px;
-  flex-shrink:0;display:block;
-}
+[data-theme="light"] .nav-logo{color:#1f2937}
+.nav-logo .ico{width:30px;height:30px;flex-shrink:0;display:block;}
 .nav-logo .ico img{width:100%;height:100%;display:block;}
 .nav-link{
   padding:5px 12px;border-radius:6px;
-  font-size:13px;font-weight:500;color:#a1a1aa;
+  font-size:13px;font-weight:500;color:var(--color-muted);
   text-decoration:none;transition:background .12s,color .12s;
 }
-.nav-link:hover{background:rgba(255,255,255,.06);color:#fafafa}
+.nav-link:hover{background:var(--tb-hover);color:var(--color-text)}
 .nav-link.on{background:rgba(99,102,241,.15);color:#818cf8}
 .nav-sp{flex:1}
 .priv{
@@ -70,70 +132,115 @@ body{
   background:rgba(16,185,129,.12);
   border:1px solid rgba(16,185,129,.3);
   border-radius:20px;padding:3px 10px;
-  display:flex;align-items:center;gap:5px;
+  display:flex;align-items:center;gap:5px;flex-shrink:0;
 }
 .priv::before{content:'●';font-size:7px}
+#theme-toggle{
+  height:30px;min-width:30px;padding:0 8px;
+  border-radius:6px;border:1px solid var(--border-mid);
+  background:transparent;font-size:14px;
+  color:var(--color-muted);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background .12s,color .12s;flex-shrink:0;
+}
+#theme-toggle:hover{background:var(--tb-hover);color:var(--color-text)}
 
 /* ── Toolbar ── */
 .toolbar{
   height:44px;display:flex;align-items:center;gap:2px;
   padding:0 12px;
-  background:#141416;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  flex-shrink:0;overflow:hidden;
+  background:var(--bg-surface);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;overflow-x:auto;overflow-y:hidden;
 }
+.toolbar::-webkit-scrollbar{height:3px}
 .tb{
   height:28px;min-width:28px;padding:0 7px;
   border-radius:5px;border:1px solid transparent;
   background:transparent;font-size:12px;font-weight:600;
-  color:#a1a1aa;cursor:pointer;
+  color:var(--color-muted);cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;gap:3px;
   transition:background .1s,border-color .1s,color .1s;
-  white-space:nowrap;font-family:'Inter',sans-serif;
+  white-space:nowrap;font-family:'Inter',sans-serif;flex-shrink:0;
 }
-.tb:hover{background:rgba(255,255,255,.08);color:#fafafa;border-color:rgba(255,255,255,.1)}
-.sep{width:1px;height:18px;background:rgba(255,255,255,.1);margin:0 3px;flex-shrink:0}
+.tb:hover{background:var(--tb-hover);color:var(--color-text);border-color:var(--border-mid)}
+.sep{width:1px;height:18px;background:var(--border-mid);margin:0 3px;flex-shrink:0}
 .tb-sel{
   height:28px;padding:0 8px;
-  border:1px solid rgba(255,255,255,.1);border-radius:5px;
-  font-size:12px;font-weight:500;color:#a1a1aa;
-  background:#141416;cursor:pointer;outline:none;
+  border:1px solid var(--border-mid);border-radius:5px;
+  font-size:12px;font-weight:500;color:var(--color-muted);
+  background:var(--bg-surface);cursor:pointer;outline:none;
   font-family:'Inter',sans-serif;
-  transition:border-color .12s;
+  transition:border-color .12s;flex-shrink:0;
 }
 .tb-sel:focus{border-color:#6366f1}
-.tb-sel option{background:#1a1a1d;color:#fafafa}
-.tb-right{margin-left:auto;display:flex;align-items:center;gap:4px}
+.tb-sel option{background:var(--bg-surface2);color:var(--color-text)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0}
 
 /* dropdown */
-.dd{position:relative;display:inline-flex}
+.dd{position:relative;display:inline-flex;flex-shrink:0}
 .dd-panel{
   position:absolute;top:calc(100% + 4px);left:0;z-index:200;
-  background:#1a1a1d;border:1px solid rgba(255,255,255,.1);
-  border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  background:var(--bg-surface2);border:1px solid var(--border-mid);
+  border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);
   min-width:175px;padding:4px;display:none;flex-direction:column;
 }
 .dd.open .dd-panel{display:flex}
 .dd-item{
   padding:7px 12px;border-radius:5px;font-size:13px;
-  color:#a1a1aa;cursor:pointer;transition:background .1s;white-space:nowrap;
+  color:var(--color-muted);cursor:pointer;transition:background .1s;white-space:nowrap;
 }
-.dd-item:hover{background:rgba(255,255,255,.07);color:#fafafa}
+.dd-item:hover{background:var(--dd-hover);color:var(--color-text)}
 
 /* ── Workspace ── */
 .ws{flex:1;display:flex;overflow:hidden;min-height:0}
 
 /* ── Panes ── */
 .pane{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.pane+.pane{border-left:1px solid rgba(255,255,255,.08)}
+.pane+.pane{border-left:1px solid var(--border)}
 .pane-hdr{
   height:36px;display:flex;align-items:center;gap:8px;
   padding:0 14px;
-  background:#141416;
-  border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;
+  background:var(--bg-surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;
 }
-.pane-title{font-size:11px;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:.6px}
-.pane-meta{margin-left:auto;font-size:11px;color:#52525b}
+.pane-title{font-size:11px;font-weight:700;color:var(--color-dimmer);text-transform:uppercase;letter-spacing:.6px}
+.pane-meta{font-size:11px;color:var(--color-faint)}
+
+/* ── Find/Replace bar ── */
+#find-bar{
+  display:none;flex-direction:column;gap:6px;
+  padding:8px 12px;
+  background:var(--find-bg);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+#find-bar.show{display:flex}
+.find-row{display:flex;align-items:center;gap:6px}
+.find-input{
+  flex:1;height:26px;padding:0 8px;
+  background:var(--bg-surface2);color:var(--color-text);
+  border:1px solid var(--border-mid);border-radius:4px;
+  font-size:12px;font-family:'Inter',sans-serif;outline:none;
+}
+.find-input:focus{border-color:#6366f1}
+.find-btn{
+  height:26px;padding:0 8px;border-radius:4px;
+  border:1px solid var(--border-mid);background:transparent;
+  font-size:11px;font-weight:500;color:var(--color-muted);
+  cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif;
+  display:inline-flex;align-items:center;gap:4px;
+  transition:background .1s,color .1s;
+}
+.find-btn:hover{background:var(--tb-hover);color:var(--color-text)}
+.find-btn.active{background:rgba(99,102,241,.2);border-color:#6366f1;color:#818cf8}
+#find-match-count{font-size:11px;color:var(--color-faint);white-space:nowrap;min-width:60px}
+#find-close{
+  background:transparent;border:none;color:var(--color-muted);
+  font-size:16px;cursor:pointer;padding:0;width:22px;height:22px;
+  border-radius:4px;display:flex;align-items:center;justify-content:center;
+}
+#find-close:hover{background:var(--tb-hover);color:var(--color-text)}
 
 /* ── Editor ── */
 #editor{
@@ -141,20 +248,20 @@ body{
   padding:20px 24px;
   font-family:'Source Code Pro','JetBrains Mono','Fira Code',monospace;
   font-size:13.5px;line-height:1.7;
-  color:#e5e7eb;background:#0a0a0b;tab-size:2;
+  color:var(--color-text);background:var(--bg-editor);tab-size:2;
 }
-#editor::placeholder{color:#3f3f46}
+#editor::placeholder{color:var(--editor-placeholder)}
 #editor.drag-over{outline:2px dashed #6366f1;outline-offset:-4px}
 
 /* ── Preview area ── */
 .prev-area{
   flex:1;overflow-y:auto;
-  background:#525659; /* site uses this grey for PDF viewer bg */
+  background:var(--bg-preview);
   padding:20px;
   display:flex;flex-direction:column;align-items:center;gap:16px;
 }
 
-/* ── Paper page (exactly matches what html2pdf renders) ── */
+/* ── Paper page ── */
 #prev-page{
   background:#ffffff;
   width:100%;max-width:760px;
@@ -162,165 +269,85 @@ body{
   flex-shrink:0;
 }
 
-/* ═══ EXACT MODERN THEME (matches user's PDF sample) ═══ */
+/* ── TOC panel ── */
+#toc-panel{
+  display:none;
+  width:220px;flex-shrink:0;
+  background:var(--toc-bg);
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+  padding:10px 8px;
+}
+#toc-panel.show{display:block}
+.toc-title{
+  font-size:10px;font-weight:700;
+  color:var(--color-dimmer);text-transform:uppercase;letter-spacing:.6px;
+  padding:4px 8px 8px;
+}
+.toc-item{
+  display:block;padding:4px 8px;border-radius:5px;
+  font-size:12px;color:var(--color-muted);
+  text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:background .1s,color .1s;cursor:pointer;
+}
+.toc-item:hover{background:var(--tb-hover);color:var(--color-text)}
+.toc-h1{font-weight:600;padding-left:8px}
+.toc-h2{padding-left:18px;font-size:11.5px}
+.toc-h3{padding-left:28px;font-size:11px;color:var(--color-faint)}
+.toc-empty{font-size:11px;color:var(--color-faint);padding:6px 8px;font-style:italic}
+#toc-toggle-btn.active{background:rgba(99,102,241,.2);border-color:#6366f1;color:#818cf8}
+
+/* ── Preview pane layout (TOC sidebar + content) ── */
+.prev-pane-body{flex:1;display:flex;overflow:hidden;min-height:0}
+
+/* ═══ MODERN THEME (default) ═══ */
 #md-body{
   font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
-  line-height:1.7;
-  font-size:15px;
-  color:#1a1d23;
-  background:#ffffff;
-  padding:48px 56px;
-  word-break:break-word;
+  line-height:1.7;font-size:15px;color:#1a1d23;
+  background:#ffffff;padding:48px 56px;word-break:break-word;
 }
-
-/* ── Headings: Modern (purple) by default ── */
-#md-body h1{
-  color:#6366f1;
-  font-size:1.85em;font-weight:700;line-height:1.3;
-  margin:1.5em 0 .55em;
-  padding-bottom:.4em;
-  border-bottom:2px solid #6366f1;
-}
-#md-body h2{
-  color:#8b5cf6;
-  font-size:1.5em;font-weight:600;line-height:1.3;
-  margin:1.5em 0 .55em;
-  padding:.1em 0 .1em 1rem;
-  border-left:4px solid #8b5cf6;
-  border-bottom:none;
-}
-#md-body h3{
-  color:#1a1d23;
-  font-size:1.2em;font-weight:700;line-height:1.3;
-  margin:1.4em 0 .4em;
-}
-#md-body h4{
-  color:#1a1d23;
-  font-size:1.05em;font-weight:700;line-height:1.3;
-  margin:1.2em 0 .35em;
-}
-#md-body h5,#md-body h6{
-  color:#1a1d23;font-size:1em;font-weight:700;
-  margin:1em 0 .3em;
-}
-
-/* First heading: trim top margin */
-#md-body > h1:first-child,
-#md-body > h2:first-child{margin-top:0}
-
-/* ── Body text ── */
+#md-body h1{color:#6366f1;font-size:1.85em;font-weight:700;line-height:1.3;margin:1.5em 0 .55em;padding-bottom:.4em;border-bottom:2px solid #6366f1}
+#md-body h2{color:#8b5cf6;font-size:1.5em;font-weight:600;line-height:1.3;margin:1.5em 0 .55em;padding:.1em 0 .1em 1rem;border-left:4px solid #8b5cf6;border-bottom:none}
+#md-body h3{color:#1a1d23;font-size:1.2em;font-weight:700;line-height:1.3;margin:1.4em 0 .4em}
+#md-body h4{color:#1a1d23;font-size:1.05em;font-weight:700;line-height:1.3;margin:1.2em 0 .35em}
+#md-body h5,#md-body h6{color:#1a1d23;font-size:1em;font-weight:700;margin:1em 0 .3em}
+#md-body > h1:first-child,#md-body > h2:first-child{margin-top:0}
 #md-body p{margin:.75em 0}
 #md-body strong{font-weight:700;color:#1a1d23}
 #md-body em{font-style:italic}
 #md-body del{text-decoration:line-through;color:#6b7280}
 #md-body a{color:#6366f1;text-decoration:none}
 #md-body a:hover{text-decoration:underline}
-
-/* ── Inline code: light grey bg, purple text ── */
-#md-body :not(pre)>code{
-  background:#f3f4f6;
-  color:#6366f1;
-  padding:2px 6px;
-  border-radius:4px;
-  font-family:'Source Code Pro','Consolas','Courier New',monospace;
-  font-size:.88em;
-  border:1px solid #e5e7eb;
-  font-weight:500;
-}
-
-/* ── Code blocks: LIGHT background (GitHub style) ── */
-#md-body pre{
-  background:#f6f8fa;
-  color:#24292f;
-  padding:16px 20px;
-  border-radius:8px;
-  border:1px solid #d0d7de;
-  overflow-x:auto;
-  margin:1em 0;
-  font-size:.88em;
-  line-height:1.55;
-}
-#md-body pre code,
-#md-body pre code.hljs{
-  background:none;padding:0;border:none;color:inherit;
-  font-family:'Source Code Pro','Consolas','Courier New',monospace;
-  font-size:1em;font-weight:400;
-}
-
-/* ── Blockquote ── */
-#md-body blockquote{
-  border-left:4px solid #6366f1;
-  padding:.5em 1em;
-  margin:1em 0;
-  color:#4b5563;
-  background:#f9fafb;
-  border-radius:0 6px 6px 0;
-  font-style:italic;
-}
-
-/* ── Tables ── */
-#md-body table{
-  width:100%;border-collapse:collapse;
-  margin:1em 0;font-size:.95em;
-  border:1px solid #d0d7de;border-radius:6px;overflow:hidden;
-}
+#md-body :not(pre)>code{background:#f3f4f6;color:#6366f1;padding:2px 6px;border-radius:4px;font-family:'Source Code Pro','Consolas','Courier New',monospace;font-size:.88em;border:1px solid #e5e7eb;font-weight:500}
+#md-body pre{background:#f6f8fa;color:#24292f;padding:16px 20px;border-radius:8px;border:1px solid #d0d7de;overflow-x:auto;margin:1em 0;font-size:.88em;line-height:1.55}
+#md-body pre code,#md-body pre code.hljs{background:none;padding:0;border:none;color:inherit;font-family:'Source Code Pro','Consolas','Courier New',monospace;font-size:1em;font-weight:400}
+#md-body blockquote{border-left:4px solid #6366f1;padding:.5em 1em;margin:1em 0;color:#4b5563;background:#f9fafb;border-radius:0 6px 6px 0;font-style:italic}
+#md-body table{width:100%;border-collapse:collapse;margin:1em 0;font-size:.95em;border:1px solid #d0d7de;border-radius:6px;overflow:hidden}
 #md-body thead{background:#f6f8fa}
-#md-body th{
-  background:#f6f8fa;font-weight:600;color:#1a1d23;
-  border:1px solid #d0d7de;padding:10px 14px;text-align:left;
-}
-#md-body td{
-  border:1px solid #d0d7de;padding:10px 14px;color:#1a1d23;
-}
+#md-body th{background:#f6f8fa;font-weight:600;color:#1a1d23;border:1px solid #d0d7de;padding:10px 14px;text-align:left}
+#md-body td{border:1px solid #d0d7de;padding:10px 14px;color:#1a1d23}
 #md-body tr:nth-child(even) td{background:#fafbfc}
-
-/* ── Lists ── */
 #md-body ul,#md-body ol{margin:.7em 0;padding-left:2em}
 #md-body li{margin:.3em 0;line-height:1.7}
 #md-body li>ul,#md-body li>ol{margin:.2em 0}
 #md-body li>p{margin:.3em 0}
-
-/* Task lists */
 .task-li{list-style:none;margin-left:-1.6em;padding-left:1.6em}
-.task-li input[type=checkbox]{
-  margin-right:.5em;accent-color:#6366f1;
-  width:14px;height:14px;vertical-align:middle;
-}
-
-/* ── HR ── */
-#md-body hr{
-  border:none;border-top:1px solid #e5e7eb;margin:1.8em 0;
-}
-
-/* ── Images ── */
+.task-li input[type=checkbox]{margin-right:.5em;accent-color:#6366f1;width:14px;height:14px;vertical-align:middle}
+#md-body hr{border:none;border-top:1px solid #e5e7eb;margin:1.8em 0}
 #md-body img{max-width:100%;height:auto;border-radius:6px;display:block;margin:.8em auto}
-
-/* ── Mermaid ── */
 #md-body .mermaid{text-align:center;margin:1.2em 0}
 #md-body .mermaid svg{max-width:100%}
-
-/* ── KaTeX ── */
 #md-body .katex-display{overflow-x:auto;overflow-y:hidden;margin:1em 0}
 #md-body .katex{font-size:1.05em}
 
-/* ═══ THEME OVERRIDES (when explicitly selected) ═══ */
-/* Default = Modern (no class) */
-
-/* Inter (Default) — neutral */
+/* ═══ THEME OVERRIDES ═══ */
 .theme-inter #md-body h1{color:#1a1d23;border-color:#e5e7eb}
-.theme-inter #md-body h2{
-  color:#1a1d23;border-left:none;
-  border-bottom:1px solid #e5e7eb;padding-left:0;padding-bottom:.3em;
-}
+.theme-inter #md-body h2{color:#1a1d23;border-left:none;border-bottom:1px solid #e5e7eb;padding-left:0;padding-bottom:.3em}
 .theme-inter #md-body :not(pre)>code{color:#1a1d23}
 .theme-inter #md-body a{color:#6366f1}
 .theme-inter #md-body blockquote{border-color:#6366f1}
-
-/* Academic (B&W) */
 .theme-academic #md-body{font-family:'Georgia','Times New Roman',serif}
-.theme-academic #md-body h1,
-.theme-academic #md-body h2,
-.theme-academic #md-body h3{color:#111;font-family:'Georgia',serif}
+.theme-academic #md-body h1,.theme-academic #md-body h2,.theme-academic #md-body h3{color:#111;font-family:'Georgia',serif}
 .theme-academic #md-body h1{border-color:#111}
 .theme-academic #md-body h2{border-color:#555;border-left-width:4px}
 .theme-academic #md-body a{color:#111;text-decoration:underline}
@@ -328,7 +355,7 @@ body{
 .theme-academic #md-body :not(pre)>code{color:#111;background:#f3f4f6}
 
 /* ── Pageless view ── */
-.pageless .prev-area{background:#0a0a0b;padding:16px 24px}
+.pageless .prev-area{background:var(--bg-app);padding:16px 24px}
 .pageless #prev-page{box-shadow:none;max-width:820px}
 .pageless #md-body{padding:32px 24px}
 
@@ -336,31 +363,37 @@ body{
 .actbar{
   height:52px;display:flex;align-items:center;gap:8px;
   padding:0 14px;
-  background:#0a0a0b;
-  border-top:1px solid rgba(255,255,255,.08);
-  flex-shrink:0;
+  background:var(--bg-app);
+  border-top:1px solid var(--border);
+  flex-shrink:0;overflow-x:auto;
 }
-.actsp{flex:1}
+.actbar::-webkit-scrollbar{height:3px}
+.actsp{flex:1;min-width:8px}
 .btn{
   height:34px;padding:0 15px;border-radius:6px;
   border:1px solid transparent;font-size:13px;font-weight:500;
   cursor:pointer;display:inline-flex;align-items:center;gap:6px;
   white-space:nowrap;font-family:'Inter',sans-serif;
-  transition:background .12s,border-color .12s,color .12s;
+  transition:background .12s,border-color .12s,color .12s;flex-shrink:0;
 }
-.btn-out{
-  background:transparent;color:#a1a1aa;
-  border-color:rgba(255,255,255,.12);
-}
-.btn-out:hover{background:rgba(255,255,255,.07);color:#fafafa}
+.btn-out{background:transparent;color:var(--color-muted);border-color:var(--btn-border)}
+.btn-out:hover{background:var(--btn-hover);color:var(--color-text)}
 .btn-del{background:transparent;color:#f87171;border-color:rgba(248,113,113,.3)}
 .btn-del:hover{background:rgba(248,113,113,.1)}
-.btn-pri{
-  background:linear-gradient(135deg,#6366f1,#8b5cf6);
-  color:#fff;border-color:#6366f1;font-weight:600;
-  box-shadow:0 1px 8px rgba(99,102,241,.4);
-}
+.btn-pri{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-color:#6366f1;font-weight:600;box-shadow:0 1px 8px rgba(99,102,241,.4)}
 .btn-pri:hover{background:linear-gradient(135deg,#4f46e5,#7c3aed)}
+
+/* ── Status bar ── */
+.status-bar{
+  height:26px;display:flex;align-items:center;
+  padding:0 14px;gap:14px;
+  background:var(--status-bg);
+  border-top:1px solid var(--border);
+  flex-shrink:0;overflow:hidden;
+}
+.status-item{font-size:11px;color:var(--color-faint);white-space:nowrap}
+.status-sep{width:1px;height:12px;background:var(--border-mid)}
+.status-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 
 /* ── Modal ── */
 .modal-overlay{
@@ -370,39 +403,36 @@ body{
 }
 .modal-overlay.show{display:flex}
 .modal{
-  background:#1a1a1d;color:#fafafa;
-  border:1px solid rgba(255,255,255,.1);
+  background:var(--modal-bg);color:var(--modal-text);
+  border:1px solid var(--border-mid);
   border-radius:12px;
   width:100%;max-width:520px;max-height:85vh;
   overflow:hidden;display:flex;flex-direction:column;
   box-shadow:0 16px 48px rgba(0,0,0,.6);
 }
-.modal-hdr{
-  display:flex;align-items:center;
-  padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.08);
-}
+.modal-hdr{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)}
 .modal-hdr h3{font-size:15px;font-weight:600;margin:0;flex:1}
 .modal-close{
-  background:transparent;border:none;color:#a1a1aa;
+  background:transparent;border:none;color:var(--color-muted);
   font-size:22px;cursor:pointer;padding:0;width:28px;height:28px;
   border-radius:5px;transition:background .12s;
 }
-.modal-close:hover{background:rgba(255,255,255,.08);color:#fafafa}
+.modal-close:hover{background:var(--tb-hover);color:var(--color-text)}
 .modal-body{padding:16px 18px;overflow-y:auto}
 .kb-tbl{width:100%;border-collapse:collapse;font-size:13px}
-.kb-tbl td{padding:6px 8px;color:#d4d4d8}
-.kb-tbl tr+tr td{border-top:1px solid rgba(255,255,255,.05)}
+.kb-tbl td{padding:6px 8px;color:var(--color-muted)}
+.kb-tbl tr+tr td{border-top:1px solid var(--border)}
 .kb-tbl td:first-child{width:38%;white-space:nowrap}
 kbd{
   display:inline-block;padding:2px 7px;
   font-family:'Source Code Pro',monospace;font-size:11px;
-  background:#27272a;border:1px solid #3f3f46;
-  border-radius:4px;color:#fafafa;
-  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 1px 1px rgba(0,0,0,.2);
+  background:var(--kbd-bg);border:1px solid var(--kbd-border);
+  border-radius:4px;color:var(--modal-text);
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 1px 1px rgba(0,0,0,.2);
 }
 .kb-md pre{
-  background:#0a0a0b;border:1px solid rgba(255,255,255,.06);
-  border-radius:6px;padding:10px;color:#a1a1aa;
+  background:var(--kbd-pre-bg);border:1px solid var(--border);
+  border-radius:6px;padding:10px;color:var(--color-muted);
   font-family:'Source Code Pro',monospace;font-size:12px;
   margin-top:8px;white-space:pre;overflow-x:auto;
 }
@@ -411,15 +441,15 @@ kbd{
 #toast{
   position:fixed;bottom:18px;left:50%;
   transform:translateX(-50%) translateY(10px);
-  background:#1f2937;color:#f9fafb;
+  background:var(--toast-bg);color:#f9fafb;
   padding:8px 18px;border-radius:8px;font-size:13px;
-  border:1px solid rgba(255,255,255,.1);
+  border:1px solid var(--border-mid);
   opacity:0;transition:opacity .2s,transform .2s;
   pointer-events:none;z-index:999;
 }
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
-/* ── Generating overlay ── */
+/* ── PDF generating overlay ── */
 #pdf-overlay{
   display:none;position:fixed;inset:0;z-index:500;
   background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
@@ -427,79 +457,117 @@ kbd{
   color:#fafafa;font-size:14px;
 }
 #pdf-overlay.show{display:flex}
-.spinner{
-  width:32px;height:32px;border:3px solid rgba(99,102,241,.3);
-  border-top-color:#6366f1;border-radius:50%;
-  animation:spin .8s linear infinite;
-}
+.spinner{width:32px;height:32px;border:3px solid rgba(99,102,241,.3);border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── Scrollbars ── */
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#3f3f46;border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:#52525b}
+::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--scrollbar-hover)}
 
-/* ── Print fallback ── */
+/* ── Mobile: swap pane button ── */
+#mobile-swap{display:none}
+
+/* ── Print ── */
 @media print{
   html,body{height:auto!important;overflow:visible!important;background:#fff!important}
-  .nav,.toolbar,.pane:first-child,.pane-hdr,.actbar{display:none!important}
+  .nav,.toolbar,.pane:first-child,.pane-hdr,.actbar,.status-bar,#toc-panel,#find-bar{display:none!important}
   .ws,.pane{display:block!important;overflow:visible!important}
   .prev-area{background:#fff!important;padding:0!important;display:block!important}
   #prev-page{box-shadow:none!important;max-width:none!important}
   #md-body{padding:20px!important}
   pre{white-space:pre-wrap;word-wrap:break-word}
+  a[href]::after{content:" (" attr(href) ")";font-size:.8em;color:#6b7280}
+  #md-body h1,#md-body h2{page-break-after:avoid}
+  #md-body pre,#md-body table,#md-body .mermaid,#md-body blockquote{page-break-inside:avoid}
+}
+
+/* ── Mobile responsive (≤768px) ── */
+@media (max-width:768px){
+  .nav{height:48px;padding:0 12px;gap:4px}
+  .nav-link{display:none}
+  .nav-link.on{display:flex}
+  .toolbar{height:auto;min-height:40px;padding:4px 8px;flex-wrap:wrap;gap:2px}
+  .tb-right{flex-wrap:wrap;margin-left:0;width:100%;gap:3px}
+  .tb-sel{flex:1;min-width:80px}
+  .ws{flex-direction:column}
+  .pane+.pane{border-left:none;border-top:1px solid var(--border)}
+  .pane{flex:none}
+  .pane.mobile-hidden{display:none}
+  .pane.mobile-active{flex:1;min-height:0}
+  #mobile-swap{
+    display:flex;align-items:center;
+    height:32px;padding:0 12px;
+    background:var(--bg-surface);border-bottom:1px solid var(--border);
+    flex-shrink:0;gap:8px;
+  }
+  #mobile-swap-btn{
+    height:24px;padding:0 10px;border-radius:4px;
+    border:1px solid var(--border-mid);background:transparent;
+    font-size:11px;font-weight:600;color:var(--color-muted);cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  #mobile-swap-btn:hover{background:var(--tb-hover);color:var(--color-text)}
+  .actbar{flex-wrap:wrap;height:auto;padding:6px 10px;gap:5px}
+  .actbar .actsp{display:none}
+  .status-bar{height:auto;flex-wrap:wrap;gap:6px;padding:4px 10px}
+  #toc-panel{width:100%;border-right:none;border-bottom:1px solid var(--border)}
 }
 </style>
 </head>
 <body>
 
 <!-- ── Nav ── -->
-<nav class="nav">
-  <a href="#" class="nav-logo"><div class="ico"><img src="icon.svg" alt=""/></div>ConvertMD2PDF</a>
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <a href="#" class="nav-logo"><div class="ico"><img src="icon.svg" alt="ConvertMD2PDF logo"/></div>ConvertMD2PDF</a>
   <a href="#" class="nav-link on">Home</a>
   <a href="#" class="nav-link">About</a>
   <a href="#" class="nav-link">Help</a>
   <a href="#" class="nav-link">Blog</a>
-  <a href="#" class="nav-link">Contact</a>
   <div class="nav-sp"></div>
-  <div class="priv">100% Private</div>
+  <div class="priv" aria-label="100% private — all processing happens in your browser">100% Private</div>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">🌙</button>
 </nav>
 
 <!-- ── Toolbar ── -->
-<div class="toolbar">
-  <button class="tb" title="Bold (Ctrl+B)" onclick="fmt('**','**')"><b>B</b></button>
-  <button class="tb" title="Italic (Ctrl+I)" onclick="fmt('*','*')"><i>I</i></button>
-  <button class="tb" title="Strikethrough" onclick="fmt('~~','~~')"><s>S</s></button>
-  <div class="sep"></div>
-  <button class="tb" title="Heading 1" onclick="fmtLine('# ')">H1</button>
-  <button class="tb" title="Heading 2" onclick="fmtLine('## ')">H2</button>
-  <button class="tb" title="Heading 3" onclick="fmtLine('### ')">H3</button>
-  <div class="sep"></div>
-  <button class="tb" title="Link (Ctrl+K)" onclick="fmt('[','](url)')">🔗</button>
-  <button class="tb" title="Inline code" onclick="fmt('\`','\`')">&lt;/&gt;</button>
-  <button class="tb" title="Code block" onclick="fmtBlock()">⬚</button>
-  <button class="tb" title="Table" onclick="fmtTable()">⊞</button>
-  <button class="tb" title="Blockquote" onclick="fmtLine('> ')">❝</button>
-  <button class="tb" title="List" onclick="fmtLine('- ')">≡</button>
-  <div class="sep"></div>
+<div class="toolbar" role="toolbar" aria-label="Markdown formatting toolbar">
+  <button class="tb" title="Bold (Ctrl+B)" aria-label="Bold" onclick="fmt('**','**')"><b>B</b></button>
+  <button class="tb" title="Italic (Ctrl+I)" aria-label="Italic" onclick="fmt('*','*')"><i>I</i></button>
+  <button class="tb" title="Strikethrough" aria-label="Strikethrough" onclick="fmt('~~','~~')"><s>S</s></button>
+  <div class="sep" role="separator"></div>
+  <button class="tb" title="Heading 1" aria-label="Heading 1" onclick="fmtLine('# ')">H1</button>
+  <button class="tb" title="Heading 2" aria-label="Heading 2" onclick="fmtLine('## ')">H2</button>
+  <button class="tb" title="Heading 3" aria-label="Heading 3" onclick="fmtLine('### ')">H3</button>
+  <div class="sep" role="separator"></div>
+  <button class="tb" title="Link (Ctrl+K)" aria-label="Insert link" onclick="fmt('[','](url)')">🔗</button>
+  <button class="tb" title="Inline code (Ctrl+Shift+C)" aria-label="Inline code" onclick="fmt('`','`')">&lt;/&gt;</button>
+  <button class="tb" title="Code block" aria-label="Code block" onclick="fmtBlock()">⬚</button>
+  <button class="tb" title="Table" aria-label="Insert table" onclick="fmtTable()">⊞</button>
+  <button class="tb" title="Blockquote" aria-label="Blockquote" onclick="fmtLine('> ')">❝</button>
+  <button class="tb" title="List" aria-label="Bullet list" onclick="fmtLine('- ')">≡</button>
+  <div class="sep" role="separator"></div>
+  <button class="tb" title="Undo (Ctrl+Z)" aria-label="Undo" onclick="document.execCommand('undo')">↩</button>
+  <button class="tb" title="Redo (Ctrl+Y)" aria-label="Redo" onclick="document.execCommand('redo')">↪</button>
+  <button class="tb" title="Copy rendered HTML" aria-label="Copy as HTML" onclick="copyHtml()">⎘ HTML</button>
+  <div class="sep" role="separator"></div>
   <div class="dd" id="dd-tpl">
-    <button class="tb" onclick="toggleDd('dd-tpl')">Templates ▾</button>
-    <div class="dd-panel">
-      <div class="dd-item" onclick="loadTpl('readme');closeDds()">📄 README</div>
-      <div class="dd-item" onclick="loadTpl('resume');closeDds()">👤 Resume</div>
-      <div class="dd-item" onclick="loadTpl('letter');closeDds()">✉️ Cover Letter</div>
-      <div class="dd-item" onclick="loadTpl('report');closeDds()">📊 Report</div>
-      <div class="dd-item" onclick="loadTpl('meeting');closeDds()">🗓 Meeting Notes</div>
-      <div class="dd-item" onclick="loadTpl('blog');closeDds()">✍️ Blog Post</div>
-      <div class="dd-item" onclick="loadTpl('api');closeDds()">⚙️ API Docs</div>
-      <div class="dd-item" onclick="loadTpl('notes');closeDds()">📝 Study Notes</div>
+    <button class="tb" onclick="toggleDd('dd-tpl')" aria-haspopup="true" aria-expanded="false">Templates ▾</button>
+    <div class="dd-panel" role="menu">
+      <div class="dd-item" role="menuitem" onclick="loadTpl('readme');closeDds()">📄 README</div>
+      <div class="dd-item" role="menuitem" onclick="loadTpl('resume');closeDds()">👤 Resume</div>
+      <div class="dd-item" role="menuitem" onclick="loadTpl('letter');closeDds()">✉️ Cover Letter</div>
+      <div class="dd-item" role="menuitem" onclick="loadTpl('report');closeDds()">📊 Report</div>
+      <div class="dd-item" role="menuitem" onclick="loadTpl('meeting');closeDds()">🗓 Meeting Notes</div>
+      <div class="dd-item" role="menuitem" onclick="loadTpl('blog');closeDds()">✍️ Blog Post</div>
+      <div class="dd-item" role="menuitem" onclick="loadTpl('api');closeDds()">⚙️ API Docs</div>
+      <div class="dd-item" role="menuitem" onclick="loadTpl('notes');closeDds()">📝 Study Notes</div>
     </div>
   </div>
-  <button class="tb" onclick="loadTpl('sample')">Sample</button>
+  <button class="tb" onclick="loadTpl('sample')" aria-label="Load sample document">Sample</button>
 
   <div class="tb-right">
-    <select class="tb-sel" id="sel-font" onchange="applyFont()" title="Font">
+    <select class="tb-sel" id="sel-font" onchange="applyFont();saveSettings()" title="Font" aria-label="Font family">
       <option value="Inter,-apple-system,BlinkMacSystemFont,sans-serif">Inter</option>
       <option value="Roboto,sans-serif">Roboto</option>
       <option value="Open Sans,sans-serif">Open Sans</option>
@@ -513,12 +581,12 @@ kbd{
       <option value="Source Code Pro,monospace">Source Code Pro</option>
       <option value="Courier New,monospace">Courier New</option>
     </select>
-    <select class="tb-sel" id="sel-theme" onchange="applyTheme()" title="Theme">
+    <select class="tb-sel" id="sel-theme" onchange="applyTheme();saveSettings()" title="Theme" aria-label="Document theme">
       <option value="">Modern (Default)</option>
       <option value="theme-inter">Inter (Plain)</option>
       <option value="theme-academic">Academic (B&amp;W)</option>
     </select>
-    <select class="tb-sel" id="sel-paper" title="Paper size">
+    <select class="tb-sel" id="sel-paper" onchange="saveSettings()" title="Paper size" aria-label="Paper size">
       <option value="a4">A4</option>
       <option value="letter">Letter</option>
       <option value="a3">A3</option>
@@ -528,60 +596,108 @@ kbd{
       <option value="legal">Legal</option>
       <option value="tabloid">Tabloid</option>
     </select>
-    <select class="tb-sel" id="sel-orient" title="Orientation">
+    <select class="tb-sel" id="sel-orient" onchange="saveSettings()" title="Orientation" aria-label="Page orientation">
       <option value="portrait">Portrait</option>
       <option value="landscape">Landscape</option>
     </select>
-    <select class="tb-sel" id="sel-view" onchange="applyView()" title="View">
+    <select class="tb-sel" id="sel-view" onchange="applyView();saveSettings()" title="View" aria-label="View mode">
       <option value="page">Page View</option>
       <option value="pageless">Pageless</option>
     </select>
   </div>
 </div>
 
+<!-- ── Mobile swap bar ── -->
+<div id="mobile-swap">
+  <button id="mobile-swap-btn" onclick="mobileSwap()" aria-label="Switch between editor and preview">⇄ Switch View</button>
+  <span id="mobile-swap-label" style="font-size:11px;color:var(--color-faint)">Editing</span>
+</div>
+
 <!-- ── Workspace ── -->
 <div class="ws">
-  <div class="pane">
+  <!-- Editor pane -->
+  <div class="pane mobile-active" id="editor-pane">
     <div class="pane-hdr">
       <span class="pane-title">Markdown Input</span>
       <span class="pane-meta" id="wc">0 words</span>
     </div>
-    <textarea id="editor" placeholder="Type or paste Markdown here, or drag &amp; drop a .md file…"></textarea>
+    <!-- Find/Replace bar -->
+    <div id="find-bar" role="search" aria-label="Find and replace">
+      <div class="find-row">
+        <input class="find-input" id="find-input" type="text" placeholder="Find…" aria-label="Search text" spellcheck="false"/>
+        <button class="find-btn" id="find-case-btn" onclick="toggleFindOpt('case')" title="Match case" aria-pressed="false">Aa</button>
+        <button class="find-btn" id="find-regex-btn" onclick="toggleFindOpt('regex')" title="Use regex" aria-pressed="false">.*</button>
+        <span id="find-match-count" aria-live="polite"></span>
+        <button class="find-btn" onclick="findNav(-1)" title="Previous match" aria-label="Previous match">↑</button>
+        <button class="find-btn" onclick="findNav(1)" title="Next match" aria-label="Next match">↓</button>
+        <button id="find-close" onclick="closeFindBar()" title="Close (Esc)" aria-label="Close find bar">×</button>
+      </div>
+      <div class="find-row">
+        <input class="find-input" id="replace-input" type="text" placeholder="Replace…" aria-label="Replace text" spellcheck="false"/>
+        <button class="find-btn" onclick="doReplace()" aria-label="Replace current">Replace</button>
+        <button class="find-btn" onclick="doReplaceAll()" aria-label="Replace all">All</button>
+      </div>
+    </div>
+    <textarea id="editor" placeholder="Type or paste Markdown here, or drag &amp; drop a .md or image file…" spellcheck="true" aria-label="Markdown editor"></textarea>
   </div>
 
-  <div class="pane">
+  <!-- Preview pane -->
+  <div class="pane mobile-hidden" id="preview-pane">
     <div class="pane-hdr">
       <span class="pane-title">PDF Output</span>
       <span class="pane-meta">Live Preview</span>
+      <span class="pane-meta" style="margin-left:8px"></span>
+      <button class="tb" id="toc-toggle-btn" onclick="toggleToc()" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-pressed="false" style="margin-left:auto">☰ TOC</button>
     </div>
-    <div class="prev-area" id="prev-area">
-      <div id="prev-page">
-        <div id="md-body"></div>
+    <div class="prev-pane-body">
+      <div id="toc-panel" role="navigation" aria-label="Table of contents">
+        <div class="toc-title">Contents</div>
+        <div id="toc-list"></div>
+      </div>
+      <div class="prev-area" id="prev-area">
+        <div id="prev-page">
+          <div id="md-body" role="main" aria-label="Rendered document"></div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ── Action bar ── -->
-<div class="actbar">
+<div class="actbar" role="toolbar" aria-label="File and export actions">
   <input type="file" id="file-in" accept=".md,.markdown,.txt" style="display:none" onchange="openFile(event)"/>
-  <button class="btn btn-out" onclick="newDoc()" title="New Document">+ New</button>
-  <button class="btn btn-out" onclick="document.getElementById('file-in').click()" title="Open .md file">📂 Open</button>
-  <button class="btn btn-out" onclick="saveMd()" title="Save Markdown">💾 Save</button>
-  <button class="btn btn-out" onclick="showHelp()" title="Keyboard Shortcuts (Ctrl+/)">?</button>
-  <button class="btn btn-del" onclick="clearAll()" title="Clear editor">✕ Clear</button>
+  <button class="btn btn-out" onclick="newDoc()" title="New Document" aria-label="New document">+ New</button>
+  <button class="btn btn-out" onclick="document.getElementById('file-in').click()" title="Open .md file" aria-label="Open file">📂 Open</button>
+  <button class="btn btn-out" onclick="saveMd()" title="Save Markdown (Ctrl+S)" aria-label="Save Markdown">💾 Save</button>
+  <button class="btn btn-out" onclick="showHelp()" title="Keyboard Shortcuts (Ctrl+/)" aria-label="Keyboard shortcuts">? Help</button>
+  <button class="btn btn-del" onclick="clearAll()" title="Clear editor" aria-label="Clear editor">✕ Clear</button>
   <div class="actsp"></div>
-  <button class="btn btn-out" onclick="doExportHTML()">Export HTML</button>
-  <button class="btn btn-out" onclick="doExportDOCX()">Export DOCX</button>
-  <button class="btn btn-pri" id="pdfBtn" onclick="doDownloadPDF()" title="Download PDF (Ctrl+P)">⬇ Download PDF</button>
+  <button class="btn btn-out" onclick="copyHtml()" aria-label="Copy HTML to clipboard">⎘ Copy HTML</button>
+  <button class="btn btn-out" onclick="doExportHTML()" aria-label="Export as HTML file">Export HTML</button>
+  <button class="btn btn-out" onclick="doExportDOCX()" aria-label="Export as DOCX file">Export DOCX</button>
+  <button class="btn btn-pri" id="pdfBtn" onclick="doDownloadPDF()" title="Download PDF (Ctrl+P)" aria-label="Download PDF">⬇ Download PDF</button>
+</div>
+
+<!-- ── Status bar ── -->
+<div class="status-bar" role="status" aria-label="Document statistics">
+  <span class="status-item" id="stat-words">0 words</span>
+  <div class="status-sep"></div>
+  <span class="status-item" id="stat-chars">0 chars</span>
+  <div class="status-sep"></div>
+  <span class="status-item" id="stat-read">0 min read</span>
+  <div class="status-right">
+    <span class="status-item" id="stat-cursor">Ln 1, Col 1</span>
+    <div class="status-sep"></div>
+    <span class="status-item" id="stat-saved" title="Autosave status">●</span>
+  </div>
 </div>
 
 <!-- ── Help modal ── -->
-<div id="help-modal" class="modal-overlay" onclick="if(event.target===this)hideHelp()">
+<div id="help-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="help-modal-title" onclick="if(event.target===this)hideHelp()">
   <div class="modal">
     <div class="modal-hdr">
-      <h3>⌨️ Keyboard Shortcuts</h3>
-      <button class="modal-close" onclick="hideHelp()">×</button>
+      <h3 id="help-modal-title">⌨️ Keyboard Shortcuts</h3>
+      <button class="modal-close" onclick="hideHelp()" aria-label="Close help dialog">×</button>
     </div>
     <div class="modal-body">
       <table class="kb-tbl">
@@ -589,48 +705,49 @@ kbd{
         <tr><td><kbd>Ctrl</kbd> + <kbd>I</kbd></td><td>Italic</td></tr>
         <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>Insert link</td></tr>
         <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd></td><td>Inline code</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>F</kbd></td><td>Find / Replace</td></tr>
         <tr><td><kbd>Ctrl</kbd> + <kbd>P</kbd></td><td>Download PDF</td></tr>
         <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>Save Markdown</td></tr>
         <tr><td><kbd>Ctrl</kbd> + <kbd>Z</kbd></td><td>Undo</td></tr>
         <tr><td><kbd>Ctrl</kbd> + <kbd>Y</kbd></td><td>Redo</td></tr>
         <tr><td><kbd>Ctrl</kbd> + <kbd>/</kbd></td><td>Show this dialog</td></tr>
-        <tr><td><kbd>Esc</kbd></td><td>Close dialog</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Close dialog / Find bar</td></tr>
       </table>
-      <h4 style="margin-top:18px;font-size:13px;color:#a1a1aa">Markdown Quick Reference</h4>
+      <h4 style="margin-top:18px;font-size:13px;color:var(--color-muted)">Markdown Quick Reference</h4>
       <div class="kb-md">
 <pre># H1     ## H2     ### H3
 **bold**     *italic*     ~~strike~~
 [link](url)     ![alt](image.png)
-\`inline code\`     \`\`\`lang ... \`\`\`
+`inline code`     ```lang ... ```
 - list     1. ordered     - [ ] task
 > blockquote
 | col | col |     ---|---
 $math$     $$display math$$
-\`\`\`mermaid     graph TD ... \`\`\`</pre>
+```mermaid     graph TD ... ```
+&lt;!-- pagebreak --&gt;     (page break in PDF)</pre>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ── PDF generating overlay ── -->
-<div id="pdf-overlay">
+<div id="pdf-overlay" aria-live="assertive" aria-label="Generating PDF">
   <div class="spinner"></div>
   <span>Generating PDF…</span>
 </div>
 
-<div id="toast"></div>
-<input type="file" id="file-in" accept=".md,.markdown,.txt" style="display:none" onchange="openFile(event)"/>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* ── Init libs ── */
 mermaid.initialize({startOnLoad:false,theme:'default',securityLevel:'loose',
   fontFamily:'Inter, system-ui, sans-serif'});
 
-/* ── Marked: custom renderer matching site ── */
+/* ── Marked: custom renderer ── */
 const rdr = new marked.Renderer();
 rdr.code = (code, lang) => {
-  if (lang === 'mermaid') return `<div class="mermaid" data-mermaid="${esc(code)}">${esc(code)}</div>`;
-  if (lang && hljs.getLanguage(lang))
+  if(lang==='mermaid') return `<div class="mermaid" data-mermaid="${esc(code)}">${esc(code)}</div>`;
+  if(lang && hljs.getLanguage(lang))
     return `<pre><code class="hljs language-${lang}">${hljs.highlight(code,{language:lang}).value}</code></pre>`;
   return `<pre><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>`;
 };
@@ -650,9 +767,13 @@ function render(){clearTimeout(_rt);_rt=setTimeout(_do,130)}
 function _do(){
   const md = edEl.value;
   const body = document.getElementById('md-body');
-  body.innerHTML = marked.parse(md);
 
-  /* fix mermaid: restore original code from data attr */
+  /* handle <!-- pagebreak --> */
+  const mdWithBreaks = md.replace(/<!--\s*pagebreak\s*-->/gi,
+    '<div class="page-break" style="page-break-before:always;margin:0;padding:0;height:1px"></div>');
+  body.innerHTML = marked.parse(mdWithBreaks);
+
+  /* fix mermaid */
   body.querySelectorAll('.mermaid').forEach(el=>{
     const orig = el.getAttribute('data-mermaid');
     if(orig) el.textContent = orig.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
@@ -673,11 +794,10 @@ function _do(){
   const diags = body.querySelectorAll('.mermaid');
   if(diags.length) mermaid.run({nodes:diags});
 
-  /* word count */
-  const w = md.trim().split(/\s+/).filter(Boolean).length;
-  document.getElementById('wc').textContent = w.toLocaleString()+' word'+(w!==1?'s':'');
-
+  updateStatus();
+  updateTOC();
   applyFont();
+  saveSettings();
 }
 
 /* ── Settings ── */
@@ -687,25 +807,277 @@ function applyFont(){
 }
 function applyTheme(){
   const t = document.getElementById('sel-theme').value;
-  const page = document.getElementById('prev-page');
-  page.className = t;
+  document.getElementById('prev-page').className = t;
 }
 function applyView(){
   const v = document.getElementById('sel-view').value;
-  document.getElementById('prev-area').classList.toggle('pageless', v==='pageless');
-  document.querySelector('.prev-area').classList.toggle('pageless', v==='pageless');
+  const pa = document.getElementById('prev-area');
+  pa.classList.toggle('pageless', v==='pageless');
 }
 
-/* ── Editor ── */
-edEl.addEventListener('input', render);
+/* ── Autosave / restore ── */
+const LS = 'cmd2pdf_';
+let _saveTimer;
+
+function saveSettings(){
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(()=>{
+    try{
+      localStorage.setItem(LS+'content', edEl.value);
+      localStorage.setItem(LS+'font',    document.getElementById('sel-font').value);
+      localStorage.setItem(LS+'theme',   document.getElementById('sel-theme').value);
+      localStorage.setItem(LS+'paper',   document.getElementById('sel-paper').value);
+      localStorage.setItem(LS+'orient',  document.getElementById('sel-orient').value);
+      localStorage.setItem(LS+'view',    document.getElementById('sel-view').value);
+      localStorage.setItem(LS+'uitheme', document.documentElement.getAttribute('data-theme'));
+      const dot = document.getElementById('stat-saved');
+      dot.style.color='#10b981';dot.title='Saved';
+      setTimeout(()=>{dot.style.color='';dot.title='Autosave status'},800);
+    }catch(e){}
+  }, 400);
+}
+
+function restoreSettings(){
+  try{
+    const content = localStorage.getItem(LS+'content');
+    const font    = localStorage.getItem(LS+'font');
+    const theme   = localStorage.getItem(LS+'theme');
+    const paper   = localStorage.getItem(LS+'paper');
+    const orient  = localStorage.getItem(LS+'orient');
+    const view    = localStorage.getItem(LS+'view');
+    const uitheme = localStorage.getItem(LS+'uitheme');
+
+    if(uitheme) applyUITheme(uitheme);
+    if(font)    document.getElementById('sel-font').value = font;
+    if(theme)   document.getElementById('sel-theme').value = theme;
+    if(paper)   document.getElementById('sel-paper').value = paper;
+    if(orient)  document.getElementById('sel-orient').value = orient;
+    if(view)    document.getElementById('sel-view').value = view;
+
+    if(content !== null){
+      edEl.value = content;
+      applyTheme(); applyFont(); applyView();
+      render();
+      if(content.trim()) toast('↺ Session restored');
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+/* ── Light/dark toggle ── */
+function applyUITheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('theme-toggle').textContent = t==='dark' ? '🌙' : '☀️';
+  /* sync highlight.js stylesheet */
+  const hl = document.getElementById('hljs-css');
+  if(hl) hl.href = t==='dark'
+    ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css'
+    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme');
+  applyUITheme(cur==='dark' ? 'light' : 'dark');
+  saveSettings();
+}
+
+/* ── Status bar ── */
+function updateStatus(){
+  const md = edEl.value;
+  const words = md.trim() ? md.trim().split(/\s+/).filter(Boolean).length : 0;
+  const chars = md.length;
+  const mins  = Math.max(1, Math.round(words / 200));
+  document.getElementById('wc').textContent = words.toLocaleString()+' word'+(words!==1?'s':'');
+  document.getElementById('stat-words').textContent = words.toLocaleString()+' words';
+  document.getElementById('stat-chars').textContent = chars.toLocaleString()+' chars';
+  document.getElementById('stat-read').textContent  = mins+' min read';
+}
+function updateCursor(){
+  const s = edEl.selectionStart;
+  const text = edEl.value.slice(0, s);
+  const line = text.split('\n').length;
+  const col  = s - text.lastIndexOf('\n');
+  document.getElementById('stat-cursor').textContent = `Ln ${line}, Col ${col}`;
+}
+
+/* ── TOC ── */
+function updateTOC(){
+  const list = document.getElementById('toc-list');
+  const headings = document.querySelectorAll('#md-body h1,#md-body h2,#md-body h3');
+  if(!headings.length){list.innerHTML='<div class="toc-empty">No headings yet</div>';return}
+  list.innerHTML='';
+  let counter=0;
+  headings.forEach(h=>{
+    h.id = h.id || ('toc-h-'+counter++);
+    const lvl = h.tagName.toLowerCase();
+    const a = document.createElement('div');
+    a.className = `toc-item toc-${lvl}`;
+    a.textContent = h.textContent;
+    a.title = h.textContent;
+    a.setAttribute('role','link');
+    a.setAttribute('tabindex','0');
+    a.onclick = ()=>h.scrollIntoView({behavior:'smooth',block:'start'});
+    a.onkeydown = e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();a.onclick()}}
+    list.appendChild(a);
+  });
+}
+function toggleToc(){
+  const panel = document.getElementById('toc-panel');
+  const btn   = document.getElementById('toc-toggle-btn');
+  const show  = !panel.classList.contains('show');
+  panel.classList.toggle('show', show);
+  btn.classList.toggle('active', show);
+  btn.setAttribute('aria-pressed', show);
+}
+
+/* ── Find/Replace ── */
+let _findMatches=[], _findIdx=0, _findCase=false, _findRegex=false;
+
+function openFindBar(){
+  const bar = document.getElementById('find-bar');
+  bar.classList.add('show');
+  const fi = document.getElementById('find-input');
+  const sel = edEl.value.slice(edEl.selectionStart, edEl.selectionEnd);
+  if(sel && sel.length < 80) fi.value = sel;
+  fi.focus(); fi.select();
+  doFind();
+}
+function closeFindBar(){
+  document.getElementById('find-bar').classList.remove('show');
+  document.getElementById('find-match-count').textContent='';
+  _findMatches=[]; _findIdx=0;
+  edEl.focus();
+}
+function toggleFindOpt(opt){
+  if(opt==='case'){
+    _findCase=!_findCase;
+    const btn=document.getElementById('find-case-btn');
+    btn.classList.toggle('active',_findCase);
+    btn.setAttribute('aria-pressed',_findCase);
+  } else {
+    _findRegex=!_findRegex;
+    const btn=document.getElementById('find-regex-btn');
+    btn.classList.toggle('active',_findRegex);
+    btn.setAttribute('aria-pressed',_findRegex);
+  }
+  doFind();
+}
+function doFind(){
+  const q = document.getElementById('find-input').value;
+  const cnt = document.getElementById('find-match-count');
+  _findMatches=[];
+  if(!q){cnt.textContent='';return}
+  const text = edEl.value;
+  try{
+    const flags = _findCase ? 'g' : 'gi';
+    const re = _findRegex ? new RegExp(q, flags) : new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), flags);
+    let m;
+    while((m=re.exec(text))!==null){
+      _findMatches.push({start:m.index,end:m.index+m[0].length});
+      if(_findMatches.length>9999) break;
+    }
+    cnt.textContent = _findMatches.length ? `${Math.min(_findIdx+1,_findMatches.length)}/${_findMatches.length}` : 'No matches';
+    cnt.style.color = _findMatches.length ? '' : '#f87171';
+  }catch(e){cnt.textContent='Invalid regex';cnt.style.color='#f87171'}
+}
+function findNav(dir){
+  doFind();
+  if(!_findMatches.length) return;
+  _findIdx = (_findIdx + dir + _findMatches.length) % _findMatches.length;
+  const m = _findMatches[_findIdx];
+  edEl.focus();
+  edEl.setSelectionRange(m.start, m.end);
+  /* scroll into view */
+  const linesB = edEl.value.slice(0,m.start).split('\n').length - 1;
+  const lineH  = 23;
+  edEl.scrollTop = Math.max(0, linesB * lineH - 80);
+  document.getElementById('find-match-count').textContent = `${_findIdx+1}/${_findMatches.length}`;
+}
+function doReplace(){
+  if(!_findMatches.length){doFind();return}
+  const m = _findMatches[_findIdx];
+  const rep = document.getElementById('replace-input').value;
+  const v = edEl.value;
+  edEl.value = v.slice(0,m.start) + rep + v.slice(m.end);
+  edEl.setSelectionRange(m.start, m.start+rep.length);
+  render(); doFind();
+}
+function doReplaceAll(){
+  const q = document.getElementById('find-input').value;
+  const rep = document.getElementById('replace-input').value;
+  if(!q) return;
+  try{
+    const flags = _findCase ? 'g' : 'gi';
+    const re = _findRegex ? new RegExp(q, flags) : new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), flags);
+    const count = (edEl.value.match(re)||[]).length;
+    edEl.value = edEl.value.replace(re, rep);
+    render(); doFind();
+    toast(`Replaced ${count} occurrence${count!==1?'s':''}`);
+  }catch(e){toast('Invalid regex')}
+}
+
+/* ── Editor events ── */
+edEl.addEventListener('input', ()=>{render();updateCursor()});
+edEl.addEventListener('click', updateCursor);
+edEl.addEventListener('keyup', updateCursor);
+edEl.addEventListener('selectionchange', updateCursor);
+
+/* Find input live search */
+document.getElementById('find-input').addEventListener('input', ()=>{_findIdx=0;doFind()});
+document.getElementById('find-input').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){e.preventDefault();findNav(e.shiftKey?-1:1)}
+  if(e.key==='Escape'){closeFindBar()}
+});
+document.getElementById('replace-input').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){e.preventDefault();doReplace()}
+  if(e.key==='Escape'){closeFindBar()}
+});
+
+/* ── Drag/drop — .md files AND images ── */
 edEl.addEventListener('dragover',e=>{e.preventDefault();edEl.classList.add('drag-over')});
 edEl.addEventListener('dragleave',()=>edEl.classList.remove('drag-over'));
 edEl.addEventListener('drop',e=>{
   e.preventDefault();edEl.classList.remove('drag-over');
-  const f=e.dataTransfer.files[0];if(f)readFile(f);
+  const f = e.dataTransfer.files[0];
+  if(!f) return;
+  if(f.type.startsWith('image/')){
+    embedImageFile(f);
+  } else {
+    readFile(f);
+  }
 });
 
-/* ── Keyboard shortcuts (matches site) ── */
+/* ── Paste image ── */
+edEl.addEventListener('paste',e=>{
+  const items = e.clipboardData?.items;
+  if(!items) return;
+  for(const item of items){
+    if(item.type.startsWith('image/')){
+      e.preventDefault();
+      embedImageFile(item.getAsFile());
+      return;
+    }
+  }
+});
+
+function embedImageFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    const b64 = ev.target.result;
+    const name = file.name ? file.name.replace(/\.[^.]+$/,'') : 'image';
+    const md = `![${name}](${b64})`;
+    const s = edEl.selectionStart;
+    edEl.value = edEl.value.slice(0,s) + md + edEl.value.slice(edEl.selectionEnd);
+    edEl.selectionStart = edEl.selectionEnd = s + md.length;
+    edEl.focus();
+    render();
+    toast('Image embedded as base64');
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ── Keyboard shortcuts ── */
 edEl.addEventListener('keydown',e=>{
   const ctrl = e.ctrlKey || e.metaKey;
   if(!ctrl) return;
@@ -716,12 +1088,29 @@ edEl.addEventListener('keydown',e=>{
   else if(k==='c' && e.shiftKey){e.preventDefault();fmt('`','`')}
   else if(k==='p'){e.preventDefault();doDownloadPDF()}
   else if(k==='s'){e.preventDefault();saveMd()}
+  else if(k==='f'){e.preventDefault();openFindBar()}
   else if(k==='/' || (k==='/' && e.shiftKey)){e.preventDefault();showHelp()}
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){hideHelp()}
+  if(e.key==='Escape'){hideHelp();closeFindBar()}
   if((e.ctrlKey||e.metaKey) && e.key==='/'){e.preventDefault();showHelp()}
+  if((e.ctrlKey||e.metaKey) && e.key==='f'){
+    if(e.target!==document.getElementById('find-input') && e.target!==document.getElementById('replace-input')){
+      e.preventDefault();openFindBar();
+    }
+  }
 });
+
+/* ── Help modal focus trap ── */
+function trapFocus(modal){
+  const focusable = modal.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+  const first = focusable[0], last = focusable[focusable.length-1];
+  modal.addEventListener('keydown',function trap(e){
+    if(e.key!=='Tab') return;
+    if(e.shiftKey){if(document.activeElement===first){e.preventDefault();last.focus()}}
+    else{if(document.activeElement===last){e.preventDefault();first.focus()}}
+  });
+}
 
 /* ── Format helpers ── */
 function fmt(before,after){
@@ -739,7 +1128,7 @@ function fmtLine(prefix){
   edEl.selectionStart=edEl.selectionEnd=s+prefix.length;
   edEl.focus();render();
 }
-function fmtBlock(){fmt('\`\`\`\n','\n\`\`\`')}
+function fmtBlock(){fmt('```\n','\n```')}
 function fmtTable(){
   const t='\n| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell     | Cell     | Cell     |\n';
   const s=edEl.selectionStart;
@@ -751,9 +1140,14 @@ function fmtTable(){
 /* ── Dropdowns ── */
 function toggleDd(id){
   const el=document.getElementById(id),was=el.classList.contains('open');
-  closeDds();if(!was)el.classList.add('open');
+  closeDds();if(!was){el.classList.add('open');el.querySelector('button').setAttribute('aria-expanded','true')}
 }
-function closeDds(){document.querySelectorAll('.dd.open').forEach(e=>e.classList.remove('open'))}
+function closeDds(){
+  document.querySelectorAll('.dd.open').forEach(e=>{
+    e.classList.remove('open');
+    e.querySelector('button').setAttribute('aria-expanded','false');
+  });
+}
 document.addEventListener('click',e=>{if(!e.target.closest('.dd'))closeDds()});
 
 /* ── File ops ── */
@@ -775,19 +1169,50 @@ function newDoc(){
   if(edEl.value.trim() && !confirm('Start a new document? Current content will be lost.'))return;
   edEl.value='# New Document\n\nStart writing here…\n';render();toast('New document');
 }
+function copyHtml(){
+  const content = document.getElementById('md-body').innerHTML;
+  navigator.clipboard.writeText(content).then(()=>toast('HTML copied to clipboard')).catch(()=>toast('Copy failed'));
+}
+
+/* ── Mobile swap ── */
+let _mobilePane = 'editor';
+function mobileSwap(){
+  const ep = document.getElementById('editor-pane');
+  const pp = document.getElementById('preview-pane');
+  const lbl = document.getElementById('mobile-swap-label');
+  if(_mobilePane==='editor'){
+    ep.classList.add('mobile-hidden');ep.classList.remove('mobile-active');
+    pp.classList.remove('mobile-hidden');pp.classList.add('mobile-active');
+    _mobilePane='preview';lbl.textContent='Previewing';
+  } else {
+    pp.classList.add('mobile-hidden');pp.classList.remove('mobile-active');
+    ep.classList.remove('mobile-hidden');ep.classList.add('mobile-active');
+    _mobilePane='editor';lbl.textContent='Editing';
+  }
+}
 
 /* ── Help modal ── */
-function showHelp(){document.getElementById('help-modal').classList.add('show')}
-function hideHelp(){document.getElementById('help-modal').classList.remove('show')}
+let _focusBefore;
+function showHelp(){
+  _focusBefore=document.activeElement;
+  const m=document.getElementById('help-modal');
+  m.classList.add('show');
+  const btn=m.querySelector('.modal-close');
+  if(btn)btn.focus();
+  trapFocus(m);
+}
+function hideHelp(){
+  document.getElementById('help-modal').classList.remove('show');
+  if(_focusBefore)_focusBefore.focus();
+}
 
-/* ── Build PDF content element (exactly like the site does) ── */
+/* ── Build PDF content element ── */
 function buildPdfContent(){
   const paper  = document.getElementById('sel-paper').value;
   const orient = document.getElementById('sel-orient').value;
   const font   = document.getElementById('sel-font').value;
   const theme  = document.getElementById('sel-theme').value;
 
-  /* paper dims in mm */
   const dims = {
     a4:{w:210,h:297},letter:{w:215.9,h:279.4},
     a3:{w:297,h:420},a5:{w:148,h:210},
@@ -797,20 +1222,16 @@ function buildPdfContent(){
   let {w,h} = dims[paper]||dims.a4;
   if(orient==='landscape'){[w,h]=[h,w];}
 
-  /* mm → px at 96dpi: 1mm = 3.7795px */
   const px = mm => Math.round(mm * 3.7795);
 
-  /* clone the rendered output */
   const src = document.getElementById('md-body');
   const clone = src.cloneNode(true);
 
-  /* fix mermaid SVGs in clone */
   clone.querySelectorAll('.mermaid').forEach(el=>{
     const orig = document.querySelector('#md-body .mermaid[data-processed]');
     if(orig) el.innerHTML = orig.innerHTML;
   });
 
-  /* theme override (applied on top of Modern default) */
   const themeExtra = theme==='theme-inter' ? `
     h1{color:#1a1d23!important;border-color:#e5e7eb!important}
     h2{color:#1a1d23!important;border-left:none!important;border-bottom:1px solid #e5e7eb!important;padding-left:0!important;padding-bottom:.3em!important}
@@ -824,49 +1245,25 @@ function buildPdfContent(){
     :not(pre)>code{color:#111!important;background:#f3f4f6!important}
   ` : '';
 
-  /* CSS for PDF — Modern theme (matches user's PDF sample exactly) */
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap');
     *{box-sizing:border-box}
-    body{
-      font-family:${font};
-      line-height:1.7;font-size:14px;
-      color:#1a1d23;background:#ffffff;
-      margin:0;padding:0;
-    }
-    /* Headings: Modern (purple) */
+    body{font-family:${font};line-height:1.7;font-size:14px;color:#1a1d23;background:#ffffff;margin:0;padding:0}
     h1{color:#6366f1;font-size:1.8em;font-weight:700;line-height:1.3;margin:1.4em 0 .55em;padding-bottom:.4em;border-bottom:2px solid #6366f1}
     h2{color:#8b5cf6;font-size:1.45em;font-weight:600;line-height:1.3;margin:1.4em 0 .55em;padding:.1em 0 .1em 1rem;border-left:4px solid #8b5cf6}
     h3{color:#1a1d23;font-size:1.18em;font-weight:700;line-height:1.3;margin:1.3em 0 .4em}
     h4{color:#1a1d23;font-size:1.05em;font-weight:700;margin:1.2em 0 .35em}
     h5,h6{color:#1a1d23;font-size:1em;font-weight:700;margin:1em 0 .3em}
     h1:first-child,h2:first-child{margin-top:0}
+    h1,h2{page-break-after:avoid}
     p{margin:.7em 0}
     strong{font-weight:700;color:#1a1d23}
     em{font-style:italic}
     a{color:#6366f1;text-decoration:none}
-    /* Inline code: light grey bg, purple text */
-    :not(pre)>code{
-      background:#f3f4f6;color:#6366f1;
-      padding:2px 6px;border-radius:4px;
-      font-family:'Source Code Pro','Consolas',monospace;
-      font-size:.88em;border:1px solid #e5e7eb;font-weight:500;
-    }
-    /* Code blocks: LIGHT (GitHub-style) */
-    pre{
-      background:#f6f8fa;color:#24292f;
-      padding:14px 18px;border-radius:8px;
-      border:1px solid #d0d7de;
-      overflow-x:auto;margin:1em 0;
-      font-size:.85em;line-height:1.55;
-      white-space:pre-wrap;word-wrap:break-word;
-      page-break-inside:avoid;
-    }
-    pre code,pre code.hljs{
-      background:none!important;padding:0;border:none;color:inherit;
-      font-family:'Source Code Pro','Consolas',monospace;
-    }
-    /* highlight.js (light/github theme) */
+    del{text-decoration:line-through;color:#6b7280}
+    :not(pre)>code{background:#f3f4f6;color:#6366f1;padding:2px 6px;border-radius:4px;font-family:'Source Code Pro','Consolas',monospace;font-size:.88em;border:1px solid #e5e7eb;font-weight:500}
+    pre{background:#f6f8fa;color:#24292f;padding:14px 18px;border-radius:8px;border:1px solid #d0d7de;overflow-x:auto;margin:1em 0;font-size:.85em;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;page-break-inside:avoid}
+    pre code,pre code.hljs{background:none!important;padding:0;border:none;color:inherit;font-family:'Source Code Pro','Consolas',monospace}
     .hljs{background:#f6f8fa;color:#24292f}
     .hljs-keyword,.hljs-selector-tag,.hljs-built_in{color:#cf222e}
     .hljs-string,.hljs-attr,.hljs-template-tag{color:#0a3069}
@@ -874,12 +1271,7 @@ function buildPdfContent(){
     .hljs-comment,.hljs-quote{color:#6e7781;font-style:italic}
     .hljs-function,.hljs-title,.hljs-name,.hljs-section{color:#8250df}
     .hljs-variable,.hljs-attribute,.hljs-tag{color:#116329}
-    blockquote{
-      border-left:4px solid #6366f1;
-      padding:.5em 1em;margin:1em 0;
-      color:#4b5563;background:#f9fafb;
-      border-radius:0 6px 6px 0;font-style:italic;
-    }
+    blockquote{border-left:4px solid #6366f1;padding:.5em 1em;margin:1em 0;color:#4b5563;background:#f9fafb;border-radius:0 6px 6px 0;font-style:italic}
     table{width:100%;border-collapse:collapse;margin:1em 0;font-size:.93em;page-break-inside:avoid}
     th{background:#f6f8fa;font-weight:600;color:#1a1d23;border:1px solid #d0d7de;padding:9px 13px;text-align:left}
     td{border:1px solid #d0d7de;padding:9px 13px;color:#1a1d23}
@@ -898,17 +1290,13 @@ function buildPdfContent(){
     .task-li input{margin-right:.5em}
     .katex-display{overflow-x:auto;margin:1em 0;page-break-inside:avoid}
     .katex{font-size:1.05em}
+    .page-break{page-break-before:always!important;margin:0;padding:0;height:1px}
     footer{margin-top:2em;padding-top:1em;border-top:1px solid #e5e7eb;font-size:.78em;color:#9ca3af;text-align:center}
     ${themeExtra}
   `;
 
-  /* wrap in a container sized exactly to paper width */
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = `
-    position:absolute;left:-9999px;top:0;
-    width:${px(w)}px;
-    background:#ffffff;overflow:visible;
-  `;
+  wrapper.style.cssText = `position:absolute;left:-9999px;top:0;width:${px(w)}px;background:#ffffff;overflow:visible;`;
   const styleEl = document.createElement('style');
   styleEl.textContent = css;
   wrapper.appendChild(styleEl);
@@ -918,7 +1306,7 @@ function buildPdfContent(){
   return {el:clone, wrapper, paper, orient};
 }
 
-/* ── Download PDF using html2pdf.js (exact same config as site) ── */
+/* ── Download PDF ── */
 async function doDownloadPDF(){
   const content = document.getElementById('md-body');
   if(!content||!edEl.value.trim()){alert('Please enter some Markdown first!');return}
@@ -927,8 +1315,6 @@ async function doDownloadPDF(){
   const orient = document.getElementById('sel-orient').value;
 
   showOverlay(true);
-
-  /* wait for any pending mermaid renders */
   await new Promise(r=>setTimeout(r,300));
 
   const {el, wrapper} = buildPdfContent();
@@ -941,19 +1327,19 @@ async function doDownloadPDF(){
     jsPDF:      {unit:'mm', format:paper, orientation:orient}
   };
 
-  try {
+  try{
     await html2pdf().set(opt).from(el).save();
     toast('PDF downloaded!');
-  } catch(e){
+  }catch(e){
     console.error(e);
     toast('PDF error — try again');
-  } finally {
+  }finally{
     document.body.removeChild(wrapper);
     showOverlay(false);
   }
 }
 
-/* ── Export HTML (exact same as site) ── */
+/* ── Export HTML ── */
 function doExportHTML(){
   const content = document.getElementById('md-body');
   if(!content||!edEl.value.trim()){alert('Please enter some Markdown first!');return}
@@ -964,11 +1350,10 @@ function doExportHTML(){
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exported Document - ConvertMD2PDF</title>
+    <title>${esc(getTitle()||'Exported Document')}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
     <style>
         body{font-family:${font};line-height:1.7;max-width:820px;margin:0 auto;padding:48px 32px;color:#1a1d23;background:#fff;font-size:15px}
         h1{color:#6366f1;font-size:1.85em;font-weight:700;margin:1.5em 0 .55em;padding-bottom:.4em;border-bottom:2px solid #6366f1;line-height:1.3}
@@ -977,6 +1362,9 @@ function doExportHTML(){
         h3{color:#1a1d23;font-size:1.2em;font-weight:700;margin:1.4em 0 .4em;line-height:1.3}
         h4{color:#1a1d23;font-size:1.05em;font-weight:700;margin:1.2em 0 .35em}
         p{margin:.75em 0}
+        strong{font-weight:700}
+        em{font-style:italic}
+        del{text-decoration:line-through;color:#6b7280}
         a{color:#6366f1;text-decoration:none}
         a:hover{text-decoration:underline}
         :not(pre)>code{background:#f3f4f6;color:#6366f1;padding:2px 6px;border-radius:4px;font-family:'Source Code Pro',monospace;font-size:.88em;border:1px solid #e5e7eb;font-weight:500}
@@ -991,12 +1379,19 @@ function doExportHTML(){
         li{margin:.3em 0;line-height:1.7}
         hr{border:none;border-top:1px solid #e5e7eb;margin:1.8em 0}
         img{max-width:100%;height:auto;border-radius:6px}
+        .task-li{list-style:none;padding-left:0}
+        .task-li input{margin-right:.5em}
+        @media(max-width:600px){body{padding:24px 16px}}
+        @media print{
+          body{max-width:none}
+          a[href]::after{content:" (" attr(href) ")";font-size:.8em;color:#6b7280}
+        }
     </style>
 </head>
 <body>
 ${content.innerHTML}
-<footer>
-    Generated with <a href="https://convertmd2pdf.com">ConvertMD2PDF</a>
+<footer style="margin-top:2em;padding-top:1em;border-top:1px solid #e5e7eb;font-size:.8em;color:#9ca3af;text-align:center">
+    Generated with <a href="https://github.com/reachtokarthikr/md-to-pdf-docx-html">ConvertMD2PDF</a>
 </footer>
 </body>
 </html>`;
@@ -1004,7 +1399,7 @@ ${content.innerHTML}
   toast('HTML exported');
 }
 
-/* ── Export DOCX using docx.js ── */
+/* ── Export DOCX ── */
 async function doExportDOCX(){
   if(!edEl.value.trim()){alert('Please enter some Markdown first!');return}
   if(typeof docx==='undefined'){toast('docx.js not loaded');return}
@@ -1084,6 +1479,7 @@ console.log(greet('World'));
 | Real-time Preview | ✅ |
 | PDF Export | ✅ |
 | Dark Mode | ✅ |
+| Autosave | ✅ |
 
 ### Blockquotes
 > "The best way to predict the future is to create it."
@@ -1094,8 +1490,6 @@ console.log(greet('World'));
 - **Quadratic Formula**: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$
 - **Block math**:
 $$\\int_{a}^{b} x^2 \\, dx = \\frac{b^3 - a^3}{3}$$
-- **Summation**:
-$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$
 
 ### Diagrams (Mermaid)
 \`\`\`mermaid
@@ -1423,11 +1817,16 @@ Write your summary here.
 function loadTpl(name){edEl.value=TPLS[name]||'';render();toast('Template loaded')}
 
 /* ── Init ── */
-edEl.value = TPLS.sample;
-render();
+const restored = restoreSettings();
+if(!restored){
+  edEl.value = TPLS.sample;
+  applyTheme(); applyFont(); applyView();
+  render();
+}
+updateCursor();
 </script>
-<footer style="text-align:center;padding:1.2em;font-size:.8em;color:#9ca3af;border-top:1px solid #e5e7eb;margin-top:1em;">
-  © 2026 <a href="https://github.com/reachtokarthikr" target="_blank" style="color:#6b7280;text-decoration:none;">Karthikeyan Rajendran</a>
+<footer style="text-align:center;padding:1.2em;font-size:.8em;color:var(--color-faint);border-top:1px solid var(--border);margin-top:0">
+  © 2026 <a href="https://github.com/reachtokarthikr" target="_blank" style="color:var(--color-muted);text-decoration:none;">Karthikeyan Rajendran</a>
 </footer>
 </body>
 </html>
