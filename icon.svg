@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#1f2226" stroke="#fdfdfb" stroke-width="2"/>
+  <text x="32" y="42" text-anchor="middle"
+        font-family="'Space Grotesk', system-ui, -apple-system, Segoe UI, sans-serif"
+        font-size="26" font-weight="800"
+        fill="#fdfdfb" letter-spacing="-1.5">MD</text>
+  <rect x="14" y="48" width="14" height="3" rx="1.5" fill="#c0633a"/>
+  <rect x="30" y="48" width="9" height="3" rx="1.5" fill="#856a2a"/>
+  <rect x="41" y="48" width="9" height="3" rx="1.5" fill="#fdfdfb"/>
+</svg>

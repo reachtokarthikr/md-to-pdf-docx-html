@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.svg" alt="md.export" width="280"/>
+</p>
+
 # MD to PDF / DOCX / HTML Converter
 
 A powerful, single-file browser-based Markdown converter that transforms your markdown into beautifully formatted PDF, DOCX, or HTML documents. No server required — runs entirely in your browser.

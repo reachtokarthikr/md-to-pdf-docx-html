@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>ConvertMD2PDF | Markdown to PDF Converter</title>
+<link rel="icon" type="image/svg+xml" href="icon.svg"/>
 
 <!-- Google Fonts (exact same as site) -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -52,11 +53,10 @@ body{
   text-decoration:none;margin-right:10px;
 }
 .nav-logo .ico{
-  width:30px;height:30px;border-radius:7px;
-  background:linear-gradient(135deg,#6366f1,#8b5cf6);
-  display:flex;align-items:center;justify-content:center;
-  color:#fff;font-size:13px;font-weight:800;flex-shrink:0;
+  width:30px;height:30px;
+  flex-shrink:0;display:block;
 }
+.nav-logo .ico img{width:100%;height:100%;display:block;}
 .nav-link{
   padding:5px 12px;border-radius:6px;
   font-size:13px;font-weight:500;color:#a1a1aa;
@@ -456,7 +456,7 @@ kbd{
 
 <!-- ── Nav ── -->
 <nav class="nav">
-  <a href="#" class="nav-logo"><div class="ico">M</div>ConvertMD2PDF</a>
+  <a href="#" class="nav-logo"><div class="ico"><img src="icon.svg" alt=""/></div>ConvertMD2PDF</a>
   <a href="#" class="nav-link on">Home</a>
   <a href="#" class="nav-link">About</a>
   <a href="#" class="nav-link">Help</a>
