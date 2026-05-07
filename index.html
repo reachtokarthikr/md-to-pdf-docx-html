@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ConvertMD2PDF | Markdown to PDF Converter</title>
+
+<!-- Google Fonts (exact same as site) -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lato:wght@400;700&family=Montserrat:wght@400;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet"/>
+
+<!-- marked.js -->
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<!-- highlight.js (github-dark theme to match dark code blocks) -->
+<link id="hljs-css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<!-- KaTeX -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<!-- Mermaid -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+<!-- html2pdf.js (exact same version as site) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- docx.js (for real DOCX export) -->
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+<!-- FileSaver.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<style>
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-size:14px;color:#1f2937;
+  background:#0a0a0b; /* site's dark bg */
+  display:flex;flex-direction:column;
+}
+
+/* ── Nav ── */
+.nav{
+  height:56px;display:flex;align-items:center;gap:6px;
+  padding:0 20px;
+  background:#0a0a0b;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;
+}
+.nav-logo{
+  display:flex;align-items:center;gap:9px;
+  font-weight:700;font-size:16px;color:#fafafa;
+  text-decoration:none;margin-right:10px;
+}
+.nav-logo .ico{
+  width:30px;height:30px;border-radius:7px;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:13px;font-weight:800;flex-shrink:0;
+}
+.nav-link{
+  padding:5px 12px;border-radius:6px;
+  font-size:13px;font-weight:500;color:#a1a1aa;
+  text-decoration:none;transition:background .12s,color .12s;
+}
+.nav-link:hover{background:rgba(255,255,255,.06);color:#fafafa}
+.nav-link.on{background:rgba(99,102,241,.15);color:#818cf8}
+.nav-sp{flex:1}
+.priv{
+  font-size:11px;font-weight:500;color:#10b981;
+  background:rgba(16,185,129,.12);
+  border:1px solid rgba(16,185,129,.3);
+  border-radius:20px;padding:3px 10px;
+  display:flex;align-items:center;gap:5px;
+}
+.priv::before{content:'●';font-size:7px}
+
+/* ── Toolbar ── */
+.toolbar{
+  height:44px;display:flex;align-items:center;gap:2px;
+  padding:0 12px;
+  background:#141416;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;overflow:hidden;
+}
+.tb{
+  height:28px;min-width:28px;padding:0 7px;
+  border-radius:5px;border:1px solid transparent;
+  background:transparent;font-size:12px;font-weight:600;
+  color:#a1a1aa;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:3px;
+  transition:background .1s,border-color .1s,color .1s;
+  white-space:nowrap;font-family:'Inter',sans-serif;
+}
+.tb:hover{background:rgba(255,255,255,.08);color:#fafafa;border-color:rgba(255,255,255,.1)}
+.sep{width:1px;height:18px;background:rgba(255,255,255,.1);margin:0 3px;flex-shrink:0}
+.tb-sel{
+  height:28px;padding:0 8px;
+  border:1px solid rgba(255,255,255,.1);border-radius:5px;
+  font-size:12px;font-weight:500;color:#a1a1aa;
+  background:#141416;cursor:pointer;outline:none;
+  font-family:'Inter',sans-serif;
+  transition:border-color .12s;
+}
+.tb-sel:focus{border-color:#6366f1}
+.tb-sel option{background:#1a1a1d;color:#fafafa}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:4px}
+
+/* dropdown */
+.dd{position:relative;display:inline-flex}
+.dd-panel{
+  position:absolute;top:calc(100% + 4px);left:0;z-index:200;
+  background:#1a1a1d;border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  min-width:175px;padding:4px;display:none;flex-direction:column;
+}
+.dd.open .dd-panel{display:flex}
+.dd-item{
+  padding:7px 12px;border-radius:5px;font-size:13px;
+  color:#a1a1aa;cursor:pointer;transition:background .1s;white-space:nowrap;
+}
+.dd-item:hover{background:rgba(255,255,255,.07);color:#fafafa}
+
+/* ── Workspace ── */
+.ws{flex:1;display:flex;overflow:hidden;min-height:0}
+
+/* ── Panes ── */
+.pane{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.pane+.pane{border-left:1px solid rgba(255,255,255,.08)}
+.pane-hdr{
+  height:36px;display:flex;align-items:center;gap:8px;
+  padding:0 14px;
+  background:#141416;
+  border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;
+}
+.pane-title{font-size:11px;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:.6px}
+.pane-meta{margin-left:auto;font-size:11px;color:#52525b}
+
+/* ── Editor ── */
+#editor{
+  flex:1;resize:none;border:none;outline:none;
+  padding:20px 24px;
+  font-family:'Source Code Pro','JetBrains Mono','Fira Code',monospace;
+  font-size:13.5px;line-height:1.7;
+  color:#e5e7eb;background:#0a0a0b;tab-size:2;
+}
+#editor::placeholder{color:#3f3f46}
+#editor.drag-over{outline:2px dashed #6366f1;outline-offset:-4px}
+
+/* ── Preview area ── */
+.prev-area{
+  flex:1;overflow-y:auto;
+  background:#525659; /* site uses this grey for PDF viewer bg */
+  padding:20px;
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+}
+
+/* ── Paper page (exactly matches what html2pdf renders) ── */
+#prev-page{
+  background:#ffffff;
+  width:100%;max-width:760px;
+  box-shadow:0 2px 16px rgba(0,0,0,.4);
+  flex-shrink:0;
+}
+
+/* ═══ EXACT MODERN THEME (matches user's PDF sample) ═══ */
+#md-body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  line-height:1.7;
+  font-size:15px;
+  color:#1a1d23;
+  background:#ffffff;
+  padding:48px 56px;
+  word-break:break-word;
+}
+
+/* ── Headings: Modern (purple) by default ── */
+#md-body h1{
+  color:#6366f1;
+  font-size:1.85em;font-weight:700;line-height:1.3;
+  margin:1.5em 0 .55em;
+  padding-bottom:.4em;
+  border-bottom:2px solid #6366f1;
+}
+#md-body h2{
+  color:#8b5cf6;
+  font-size:1.5em;font-weight:600;line-height:1.3;
+  margin:1.5em 0 .55em;
+  padding:.1em 0 .1em 1rem;
+  border-left:4px solid #8b5cf6;
+  border-bottom:none;
+}
+#md-body h3{
+  color:#1a1d23;
+  font-size:1.2em;font-weight:700;line-height:1.3;
+  margin:1.4em 0 .4em;
+}
+#md-body h4{
+  color:#1a1d23;
+  font-size:1.05em;font-weight:700;line-height:1.3;
+  margin:1.2em 0 .35em;
+}
+#md-body h5,#md-body h6{
+  color:#1a1d23;font-size:1em;font-weight:700;
+  margin:1em 0 .3em;
+}
+
+/* First heading: trim top margin */
+#md-body > h1:first-child,
+#md-body > h2:first-child{margin-top:0}
+
+/* ── Body text ── */
+#md-body p{margin:.75em 0}
+#md-body strong{font-weight:700;color:#1a1d23}
+#md-body em{font-style:italic}
+#md-body del{text-decoration:line-through;color:#6b7280}
+#md-body a{color:#6366f1;text-decoration:none}
+#md-body a:hover{text-decoration:underline}
+
+/* ── Inline code: light grey bg, purple text ── */
+#md-body :not(pre)>code{
+  background:#f3f4f6;
+  color:#6366f1;
+  padding:2px 6px;
+  border-radius:4px;
+  font-family:'Source Code Pro','Consolas','Courier New',monospace;
+  font-size:.88em;
+  border:1px solid #e5e7eb;
+  font-weight:500;
+}
+
+/* ── Code blocks: LIGHT background (GitHub style) ── */
+#md-body pre{
+  background:#f6f8fa;
+  color:#24292f;
+  padding:16px 20px;
+  border-radius:8px;
+  border:1px solid #d0d7de;
+  overflow-x:auto;
+  margin:1em 0;
+  font-size:.88em;
+  line-height:1.55;
+}
+#md-body pre code,
+#md-body pre code.hljs{
+  background:none;padding:0;border:none;color:inherit;
+  font-family:'Source Code Pro','Consolas','Courier New',monospace;
+  font-size:1em;font-weight:400;
+}
+
+/* ── Blockquote ── */
+#md-body blockquote{
+  border-left:4px solid #6366f1;
+  padding:.5em 1em;
+  margin:1em 0;
+  color:#4b5563;
+  background:#f9fafb;
+  border-radius:0 6px 6px 0;
+  font-style:italic;
+}
+
+/* ── Tables ── */
+#md-body table{
+  width:100%;border-collapse:collapse;
+  margin:1em 0;font-size:.95em;
+  border:1px solid #d0d7de;border-radius:6px;overflow:hidden;
+}
+#md-body thead{background:#f6f8fa}
+#md-body th{
+  background:#f6f8fa;font-weight:600;color:#1a1d23;
+  border:1px solid #d0d7de;padding:10px 14px;text-align:left;
+}
+#md-body td{
+  border:1px solid #d0d7de;padding:10px 14px;color:#1a1d23;
+}
+#md-body tr:nth-child(even) td{background:#fafbfc}
+
+/* ── Lists ── */
+#md-body ul,#md-body ol{margin:.7em 0;padding-left:2em}
+#md-body li{margin:.3em 0;line-height:1.7}
+#md-body li>ul,#md-body li>ol{margin:.2em 0}
+#md-body li>p{margin:.3em 0}
+
+/* Task lists */
+.task-li{list-style:none;margin-left:-1.6em;padding-left:1.6em}
+.task-li input[type=checkbox]{
+  margin-right:.5em;accent-color:#6366f1;
+  width:14px;height:14px;vertical-align:middle;
+}
+
+/* ── HR ── */
+#md-body hr{
+  border:none;border-top:1px solid #e5e7eb;margin:1.8em 0;
+}
+
+/* ── Images ── */
+#md-body img{max-width:100%;height:auto;border-radius:6px;display:block;margin:.8em auto}
+
+/* ── Mermaid ── */
+#md-body .mermaid{text-align:center;margin:1.2em 0}
+#md-body .mermaid svg{max-width:100%}
+
+/* ── KaTeX ── */
+#md-body .katex-display{overflow-x:auto;overflow-y:hidden;margin:1em 0}
+#md-body .katex{font-size:1.05em}
+
+/* ═══ THEME OVERRIDES (when explicitly selected) ═══ */
+/* Default = Modern (no class) */
+
+/* Inter (Default) — neutral */
+.theme-inter #md-body h1{color:#1a1d23;border-color:#e5e7eb}
+.theme-inter #md-body h2{
+  color:#1a1d23;border-left:none;
+  border-bottom:1px solid #e5e7eb;padding-left:0;padding-bottom:.3em;
+}
+.theme-inter #md-body :not(pre)>code{color:#1a1d23}
+.theme-inter #md-body a{color:#6366f1}
+.theme-inter #md-body blockquote{border-color:#6366f1}
+
+/* Academic (B&W) */
+.theme-academic #md-body{font-family:'Georgia','Times New Roman',serif}
+.theme-academic #md-body h1,
+.theme-academic #md-body h2,
+.theme-academic #md-body h3{color:#111;font-family:'Georgia',serif}
+.theme-academic #md-body h1{border-color:#111}
+.theme-academic #md-body h2{border-color:#555;border-left-width:4px}
+.theme-academic #md-body a{color:#111;text-decoration:underline}
+.theme-academic #md-body blockquote{border-color:#374151;color:#374151;background:#f9fafb}
+.theme-academic #md-body :not(pre)>code{color:#111;background:#f3f4f6}
+
+/* ── Pageless view ── */
+.pageless .prev-area{background:#0a0a0b;padding:16px 24px}
+.pageless #prev-page{box-shadow:none;max-width:820px}
+.pageless #md-body{padding:32px 24px}
+
+/* ── Action bar ── */
+.actbar{
+  height:52px;display:flex;align-items:center;gap:8px;
+  padding:0 14px;
+  background:#0a0a0b;
+  border-top:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;
+}
+.actsp{flex:1}
+.btn{
+  height:34px;padding:0 15px;border-radius:6px;
+  border:1px solid transparent;font-size:13px;font-weight:500;
+  cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;font-family:'Inter',sans-serif;
+  transition:background .12s,border-color .12s,color .12s;
+}
+.btn-out{
+  background:transparent;color:#a1a1aa;
+  border-color:rgba(255,255,255,.12);
+}
+.btn-out:hover{background:rgba(255,255,255,.07);color:#fafafa}
+.btn-del{background:transparent;color:#f87171;border-color:rgba(248,113,113,.3)}
+.btn-del:hover{background:rgba(248,113,113,.1)}
+.btn-pri{
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;border-color:#6366f1;font-weight:600;
+  box-shadow:0 1px 8px rgba(99,102,241,.4);
+}
+.btn-pri:hover{background:linear-gradient(135deg,#4f46e5,#7c3aed)}
+
+/* ── Modal ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:600;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:#1a1a1d;color:#fafafa;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  width:100%;max-width:520px;max-height:85vh;
+  overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 16px 48px rgba(0,0,0,.6);
+}
+.modal-hdr{
+  display:flex;align-items:center;
+  padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.08);
+}
+.modal-hdr h3{font-size:15px;font-weight:600;margin:0;flex:1}
+.modal-close{
+  background:transparent;border:none;color:#a1a1aa;
+  font-size:22px;cursor:pointer;padding:0;width:28px;height:28px;
+  border-radius:5px;transition:background .12s;
+}
+.modal-close:hover{background:rgba(255,255,255,.08);color:#fafafa}
+.modal-body{padding:16px 18px;overflow-y:auto}
+.kb-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.kb-tbl td{padding:6px 8px;color:#d4d4d8}
+.kb-tbl tr+tr td{border-top:1px solid rgba(255,255,255,.05)}
+.kb-tbl td:first-child{width:38%;white-space:nowrap}
+kbd{
+  display:inline-block;padding:2px 7px;
+  font-family:'Source Code Pro',monospace;font-size:11px;
+  background:#27272a;border:1px solid #3f3f46;
+  border-radius:4px;color:#fafafa;
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 1px 1px rgba(0,0,0,.2);
+}
+.kb-md pre{
+  background:#0a0a0b;border:1px solid rgba(255,255,255,.06);
+  border-radius:6px;padding:10px;color:#a1a1aa;
+  font-family:'Source Code Pro',monospace;font-size:12px;
+  margin-top:8px;white-space:pre;overflow-x:auto;
+}
+
+/* ── Toast ── */
+#toast{
+  position:fixed;bottom:18px;left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:#1f2937;color:#f9fafb;
+  padding:8px 18px;border-radius:8px;font-size:13px;
+  border:1px solid rgba(255,255,255,.1);
+  opacity:0;transition:opacity .2s,transform .2s;
+  pointer-events:none;z-index:999;
+}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Generating overlay ── */
+#pdf-overlay{
+  display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  color:#fafafa;font-size:14px;
+}
+#pdf-overlay.show{display:flex}
+.spinner{
+  width:32px;height:32px;border:3px solid rgba(99,102,241,.3);
+  border-top-color:#6366f1;border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Scrollbars ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#3f3f46;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#52525b}
+
+/* ── Print fallback ── */
+@media print{
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important}
+  .nav,.toolbar,.pane:first-child,.pane-hdr,.actbar{display:none!important}
+  .ws,.pane{display:block!important;overflow:visible!important}
+  .prev-area{background:#fff!important;padding:0!important;display:block!important}
+  #prev-page{box-shadow:none!important;max-width:none!important}
+  #md-body{padding:20px!important}
+  pre{white-space:pre-wrap;word-wrap:break-word}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="nav">
+  <a href="#" class="nav-logo"><div class="ico">M</div>ConvertMD2PDF</a>
+  <a href="#" class="nav-link on">Home</a>
+  <a href="#" class="nav-link">About</a>
+  <a href="#" class="nav-link">Help</a>
+  <a href="#" class="nav-link">Blog</a>
+  <a href="#" class="nav-link">Contact</a>
+  <div class="nav-sp"></div>
+  <div class="priv">100% Private</div>
+</nav>
+
+<!-- ── Toolbar ── -->
+<div class="toolbar">
+  <button class="tb" title="Bold (Ctrl+B)" onclick="fmt('**','**')"><b>B</b></button>
+  <button class="tb" title="Italic (Ctrl+I)" onclick="fmt('*','*')"><i>I</i></button>
+  <button class="tb" title="Strikethrough" onclick="fmt('~~','~~')"><s>S</s></button>
+  <div class="sep"></div>
+  <button class="tb" title="Heading 1" onclick="fmtLine('# ')">H1</button>
+  <button class="tb" title="Heading 2" onclick="fmtLine('## ')">H2</button>
+  <button class="tb" title="Heading 3" onclick="fmtLine('### ')">H3</button>
+  <div class="sep"></div>
+  <button class="tb" title="Link (Ctrl+K)" onclick="fmt('[','](url)')">🔗</button>
+  <button class="tb" title="Inline code" onclick="fmt('\`','\`')">&lt;/&gt;</button>
+  <button class="tb" title="Code block" onclick="fmtBlock()">⬚</button>
+  <button class="tb" title="Table" onclick="fmtTable()">⊞</button>
+  <button class="tb" title="Blockquote" onclick="fmtLine('> ')">❝</button>
+  <button class="tb" title="List" onclick="fmtLine('- ')">≡</button>
+  <div class="sep"></div>
+  <div class="dd" id="dd-tpl">
+    <button class="tb" onclick="toggleDd('dd-tpl')">Templates ▾</button>
+    <div class="dd-panel">
+      <div class="dd-item" onclick="loadTpl('readme');closeDds()">📄 README</div>
+      <div class="dd-item" onclick="loadTpl('resume');closeDds()">👤 Resume</div>
+      <div class="dd-item" onclick="loadTpl('letter');closeDds()">✉️ Cover Letter</div>
+      <div class="dd-item" onclick="loadTpl('report');closeDds()">📊 Report</div>
+      <div class="dd-item" onclick="loadTpl('meeting');closeDds()">🗓 Meeting Notes</div>
+      <div class="dd-item" onclick="loadTpl('blog');closeDds()">✍️ Blog Post</div>
+      <div class="dd-item" onclick="loadTpl('api');closeDds()">⚙️ API Docs</div>
+      <div class="dd-item" onclick="loadTpl('notes');closeDds()">📝 Study Notes</div>
+    </div>
+  </div>
+  <button class="tb" onclick="loadTpl('sample')">Sample</button>
+
+  <div class="tb-right">
+    <select class="tb-sel" id="sel-font" onchange="applyFont()" title="Font">
+      <option value="Inter,-apple-system,BlinkMacSystemFont,sans-serif">Inter</option>
+      <option value="Roboto,sans-serif">Roboto</option>
+      <option value="Open Sans,sans-serif">Open Sans</option>
+      <option value="Lato,sans-serif">Lato</option>
+      <option value="Montserrat,sans-serif">Montserrat</option>
+      <option value="Times New Roman,serif">Times New Roman</option>
+      <option value="Garamond,serif">Garamond</option>
+      <option value="Georgia,serif">Georgia</option>
+      <option value="Merriweather,serif">Merriweather</option>
+      <option value="Playfair Display,serif">Playfair Display</option>
+      <option value="Source Code Pro,monospace">Source Code Pro</option>
+      <option value="Courier New,monospace">Courier New</option>
+    </select>
+    <select class="tb-sel" id="sel-theme" onchange="applyTheme()" title="Theme">
+      <option value="">Modern (Default)</option>
+      <option value="theme-inter">Inter (Plain)</option>
+      <option value="theme-academic">Academic (B&amp;W)</option>
+    </select>
+    <select class="tb-sel" id="sel-paper" title="Paper size">
+      <option value="a4">A4</option>
+      <option value="letter">Letter</option>
+      <option value="a3">A3</option>
+      <option value="a5">A5</option>
+      <option value="a1">A1</option>
+      <option value="a2">A2</option>
+      <option value="legal">Legal</option>
+      <option value="tabloid">Tabloid</option>
+    </select>
+    <select class="tb-sel" id="sel-orient" title="Orientation">
+      <option value="portrait">Portrait</option>
+      <option value="landscape">Landscape</option>
+    </select>
+    <select class="tb-sel" id="sel-view" onchange="applyView()" title="View">
+      <option value="page">Page View</option>
+      <option value="pageless">Pageless</option>
+    </select>
+  </div>
+</div>
+
+<!-- ── Workspace ── -->
+<div class="ws">
+  <div class="pane">
+    <div class="pane-hdr">
+      <span class="pane-title">Markdown Input</span>
+      <span class="pane-meta" id="wc">0 words</span>
+    </div>
+    <textarea id="editor" placeholder="Type or paste Markdown here, or drag &amp; drop a .md file…"></textarea>
+  </div>
+
+  <div class="pane">
+    <div class="pane-hdr">
+      <span class="pane-title">PDF Output</span>
+      <span class="pane-meta">Live Preview</span>
+    </div>
+    <div class="prev-area" id="prev-area">
+      <div id="prev-page">
+        <div id="md-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Action bar ── -->
+<div class="actbar">
+  <input type="file" id="file-in" accept=".md,.markdown,.txt" style="display:none" onchange="openFile(event)"/>
+  <button class="btn btn-out" onclick="newDoc()" title="New Document">+ New</button>
+  <button class="btn btn-out" onclick="document.getElementById('file-in').click()" title="Open .md file">📂 Open</button>
+  <button class="btn btn-out" onclick="saveMd()" title="Save Markdown">💾 Save</button>
+  <button class="btn btn-out" onclick="showHelp()" title="Keyboard Shortcuts (Ctrl+/)">?</button>
+  <button class="btn btn-del" onclick="clearAll()" title="Clear editor">✕ Clear</button>
+  <div class="actsp"></div>
+  <button class="btn btn-out" onclick="doExportHTML()">Export HTML</button>
+  <button class="btn btn-out" onclick="doExportDOCX()">Export DOCX</button>
+  <button class="btn btn-pri" id="pdfBtn" onclick="doDownloadPDF()" title="Download PDF (Ctrl+P)">⬇ Download PDF</button>
+</div>
+
+<!-- ── Help modal ── -->
+<div id="help-modal" class="modal-overlay" onclick="if(event.target===this)hideHelp()">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>⌨️ Keyboard Shortcuts</h3>
+      <button class="modal-close" onclick="hideHelp()">×</button>
+    </div>
+    <div class="modal-body">
+      <table class="kb-tbl">
+        <tr><td><kbd>Ctrl</kbd> + <kbd>B</kbd></td><td>Bold</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>I</kbd></td><td>Italic</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>Insert link</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd></td><td>Inline code</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>P</kbd></td><td>Download PDF</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>Save Markdown</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>Z</kbd></td><td>Undo</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>Y</kbd></td><td>Redo</td></tr>
+        <tr><td><kbd>Ctrl</kbd> + <kbd>/</kbd></td><td>Show this dialog</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Close dialog</td></tr>
+      </table>
+      <h4 style="margin-top:18px;font-size:13px;color:#a1a1aa">Markdown Quick Reference</h4>
+      <div class="kb-md">
+<pre># H1     ## H2     ### H3
+**bold**     *italic*     ~~strike~~
+[link](url)     ![alt](image.png)
+\`inline code\`     \`\`\`lang ... \`\`\`
+- list     1. ordered     - [ ] task
+> blockquote
+| col | col |     ---|---
+$math$     $$display math$$
+\`\`\`mermaid     graph TD ... \`\`\`</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PDF generating overlay ── -->
+<div id="pdf-overlay">
+  <div class="spinner"></div>
+  <span>Generating PDF…</span>
+</div>
+
+<div id="toast"></div>
+<input type="file" id="file-in" accept=".md,.markdown,.txt" style="display:none" onchange="openFile(event)"/>
+
+<script>
+/* ── Init libs ── */
+mermaid.initialize({startOnLoad:false,theme:'default',securityLevel:'loose',
+  fontFamily:'Inter, system-ui, sans-serif'});
+
+/* ── Marked: custom renderer matching site ── */
+const rdr = new marked.Renderer();
+rdr.code = (code, lang) => {
+  if (lang === 'mermaid') return `<div class="mermaid" data-mermaid="${esc(code)}">${esc(code)}</div>`;
+  if (lang && hljs.getLanguage(lang))
+    return `<pre><code class="hljs language-${lang}">${hljs.highlight(code,{language:lang}).value}</code></pre>`;
+  return `<pre><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>`;
+};
+rdr.listitem = (text, task, checked) =>
+  task ? `<li class="task-li"><input type="checkbox"${checked?' checked':''} disabled/> ${text}</li>`
+       : `<li>${text}</li>`;
+marked.use({renderer:rdr, gfm:true, breaks:false});
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+/* ── Render ── */
+let _rt;
+const edEl = document.getElementById('editor');
+
+function render(){clearTimeout(_rt);_rt=setTimeout(_do,130)}
+
+function _do(){
+  const md = edEl.value;
+  const body = document.getElementById('md-body');
+  body.innerHTML = marked.parse(md);
+
+  /* fix mermaid: restore original code from data attr */
+  body.querySelectorAll('.mermaid').forEach(el=>{
+    const orig = el.getAttribute('data-mermaid');
+    if(orig) el.textContent = orig.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+    el.removeAttribute('data-processed');
+  });
+
+  /* KaTeX */
+  renderMathInElement(body,{
+    delimiters:[
+      {left:'$$',right:'$$',display:true},
+      {left:'$',right:'$',display:false},
+      {left:'\\[',right:'\\]',display:true},
+      {left:'\\(',right:'\\)',display:false}
+    ],throwOnError:false
+  });
+
+  /* Mermaid */
+  const diags = body.querySelectorAll('.mermaid');
+  if(diags.length) mermaid.run({nodes:diags});
+
+  /* word count */
+  const w = md.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('wc').textContent = w.toLocaleString()+' word'+(w!==1?'s':'');
+
+  applyFont();
+}
+
+/* ── Settings ── */
+function applyFont(){
+  const f = document.getElementById('sel-font').value;
+  document.getElementById('md-body').style.fontFamily = f;
+}
+function applyTheme(){
+  const t = document.getElementById('sel-theme').value;
+  const page = document.getElementById('prev-page');
+  page.className = t;
+}
+function applyView(){
+  const v = document.getElementById('sel-view').value;
+  document.getElementById('prev-area').classList.toggle('pageless', v==='pageless');
+  document.querySelector('.prev-area').classList.toggle('pageless', v==='pageless');
+}
+
+/* ── Editor ── */
+edEl.addEventListener('input', render);
+edEl.addEventListener('dragover',e=>{e.preventDefault();edEl.classList.add('drag-over')});
+edEl.addEventListener('dragleave',()=>edEl.classList.remove('drag-over'));
+edEl.addEventListener('drop',e=>{
+  e.preventDefault();edEl.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];if(f)readFile(f);
+});
+
+/* ── Keyboard shortcuts (matches site) ── */
+edEl.addEventListener('keydown',e=>{
+  const ctrl = e.ctrlKey || e.metaKey;
+  if(!ctrl) return;
+  const k = e.key.toLowerCase();
+  if(k==='b'){e.preventDefault();fmt('**','**')}
+  else if(k==='i'){e.preventDefault();fmt('*','*')}
+  else if(k==='k'){e.preventDefault();fmt('[','](url)')}
+  else if(k==='c' && e.shiftKey){e.preventDefault();fmt('`','`')}
+  else if(k==='p'){e.preventDefault();doDownloadPDF()}
+  else if(k==='s'){e.preventDefault();saveMd()}
+  else if(k==='/' || (k==='/' && e.shiftKey)){e.preventDefault();showHelp()}
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){hideHelp()}
+  if((e.ctrlKey||e.metaKey) && e.key==='/'){e.preventDefault();showHelp()}
+});
+
+/* ── Format helpers ── */
+function fmt(before,after){
+  const s=edEl.selectionStart,e=edEl.selectionEnd;
+  const sel=edEl.value.slice(s,e)||'text';
+  edEl.value=edEl.value.slice(0,s)+before+sel+after+edEl.value.slice(e);
+  edEl.selectionStart=s+before.length;
+  edEl.selectionEnd=s+before.length+sel.length;
+  edEl.focus();render();
+}
+function fmtLine(prefix){
+  const s=edEl.selectionStart;
+  const ls=edEl.value.lastIndexOf('\n',s-1)+1;
+  edEl.value=edEl.value.slice(0,ls)+prefix+edEl.value.slice(ls);
+  edEl.selectionStart=edEl.selectionEnd=s+prefix.length;
+  edEl.focus();render();
+}
+function fmtBlock(){fmt('\`\`\`\n','\n\`\`\`')}
+function fmtTable(){
+  const t='\n| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell     | Cell     | Cell     |\n';
+  const s=edEl.selectionStart;
+  edEl.value=edEl.value.slice(0,s)+t+edEl.value.slice(s);
+  edEl.selectionStart=edEl.selectionEnd=s+t.length;
+  edEl.focus();render();
+}
+
+/* ── Dropdowns ── */
+function toggleDd(id){
+  const el=document.getElementById(id),was=el.classList.contains('open');
+  closeDds();if(!was)el.classList.add('open');
+}
+function closeDds(){document.querySelectorAll('.dd.open').forEach(e=>e.classList.remove('open'))}
+document.addEventListener('click',e=>{if(!e.target.closest('.dd'))closeDds()});
+
+/* ── File ops ── */
+function openFile(e){const f=e.target.files[0];if(f)readFile(f);e.target.value=''}
+function readFile(f){
+  const r=new FileReader();
+  r.onload=ev=>{edEl.value=ev.target.result;render();toast('Opened: '+f.name)};
+  r.readAsText(f);
+}
+function saveMd(){
+  const t=getTitle()||'document';
+  dl(slug(t)+'.md',edEl.value,'text/markdown');
+  toast('Saved '+slug(t)+'.md');
+}
+function clearAll(){
+  if(!edEl.value||confirm('Clear the editor?')){edEl.value='';render();toast('Cleared')}
+}
+function newDoc(){
+  if(edEl.value.trim() && !confirm('Start a new document? Current content will be lost.'))return;
+  edEl.value='# New Document\n\nStart writing here…\n';render();toast('New document');
+}
+
+/* ── Help modal ── */
+function showHelp(){document.getElementById('help-modal').classList.add('show')}
+function hideHelp(){document.getElementById('help-modal').classList.remove('show')}
+
+/* ── Build PDF content element (exactly like the site does) ── */
+function buildPdfContent(){
+  const paper  = document.getElementById('sel-paper').value;
+  const orient = document.getElementById('sel-orient').value;
+  const font   = document.getElementById('sel-font').value;
+  const theme  = document.getElementById('sel-theme').value;
+
+  /* paper dims in mm */
+  const dims = {
+    a4:{w:210,h:297},letter:{w:215.9,h:279.4},
+    a3:{w:297,h:420},a5:{w:148,h:210},
+    a1:{w:594,h:841},a2:{w:420,h:594},
+    legal:{w:215.9,h:355.6},tabloid:{w:279.4,h:431.8}
+  };
+  let {w,h} = dims[paper]||dims.a4;
+  if(orient==='landscape'){[w,h]=[h,w];}
+
+  /* mm → px at 96dpi: 1mm = 3.7795px */
+  const px = mm => Math.round(mm * 3.7795);
+
+  /* clone the rendered output */
+  const src = document.getElementById('md-body');
+  const clone = src.cloneNode(true);
+
+  /* fix mermaid SVGs in clone */
+  clone.querySelectorAll('.mermaid').forEach(el=>{
+    const orig = document.querySelector('#md-body .mermaid[data-processed]');
+    if(orig) el.innerHTML = orig.innerHTML;
+  });
+
+  /* theme override (applied on top of Modern default) */
+  const themeExtra = theme==='theme-inter' ? `
+    h1{color:#1a1d23!important;border-color:#e5e7eb!important}
+    h2{color:#1a1d23!important;border-left:none!important;border-bottom:1px solid #e5e7eb!important;padding-left:0!important;padding-bottom:.3em!important}
+    :not(pre)>code{color:#1a1d23!important}
+  ` : theme==='theme-academic' ? `
+    body{font-family:Georgia,'Times New Roman',serif!important}
+    h1,h2,h3{font-family:Georgia,serif!important;color:#111!important}
+    h1{border-color:#111!important}h2{border-color:#555!important}
+    a{color:#111!important;text-decoration:underline!important}
+    blockquote{border-color:#374151!important;color:#374151!important}
+    :not(pre)>code{color:#111!important;background:#f3f4f6!important}
+  ` : '';
+
+  /* CSS for PDF — Modern theme (matches user's PDF sample exactly) */
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap');
+    *{box-sizing:border-box}
+    body{
+      font-family:${font};
+      line-height:1.7;font-size:14px;
+      color:#1a1d23;background:#ffffff;
+      margin:0;padding:0;
+    }
+    /* Headings: Modern (purple) */
+    h1{color:#6366f1;font-size:1.8em;font-weight:700;line-height:1.3;margin:1.4em 0 .55em;padding-bottom:.4em;border-bottom:2px solid #6366f1}
+    h2{color:#8b5cf6;font-size:1.45em;font-weight:600;line-height:1.3;margin:1.4em 0 .55em;padding:.1em 0 .1em 1rem;border-left:4px solid #8b5cf6}
+    h3{color:#1a1d23;font-size:1.18em;font-weight:700;line-height:1.3;margin:1.3em 0 .4em}
+    h4{color:#1a1d23;font-size:1.05em;font-weight:700;margin:1.2em 0 .35em}
+    h5,h6{color:#1a1d23;font-size:1em;font-weight:700;margin:1em 0 .3em}
+    h1:first-child,h2:first-child{margin-top:0}
+    p{margin:.7em 0}
+    strong{font-weight:700;color:#1a1d23}
+    em{font-style:italic}
+    a{color:#6366f1;text-decoration:none}
+    /* Inline code: light grey bg, purple text */
+    :not(pre)>code{
+      background:#f3f4f6;color:#6366f1;
+      padding:2px 6px;border-radius:4px;
+      font-family:'Source Code Pro','Consolas',monospace;
+      font-size:.88em;border:1px solid #e5e7eb;font-weight:500;
+    }
+    /* Code blocks: LIGHT (GitHub-style) */
+    pre{
+      background:#f6f8fa;color:#24292f;
+      padding:14px 18px;border-radius:8px;
+      border:1px solid #d0d7de;
+      overflow-x:auto;margin:1em 0;
+      font-size:.85em;line-height:1.55;
+      white-space:pre-wrap;word-wrap:break-word;
+      page-break-inside:avoid;
+    }
+    pre code,pre code.hljs{
+      background:none!important;padding:0;border:none;color:inherit;
+      font-family:'Source Code Pro','Consolas',monospace;
+    }
+    /* highlight.js (light/github theme) */
+    .hljs{background:#f6f8fa;color:#24292f}
+    .hljs-keyword,.hljs-selector-tag,.hljs-built_in{color:#cf222e}
+    .hljs-string,.hljs-attr,.hljs-template-tag{color:#0a3069}
+    .hljs-number,.hljs-literal,.hljs-meta{color:#0550ae}
+    .hljs-comment,.hljs-quote{color:#6e7781;font-style:italic}
+    .hljs-function,.hljs-title,.hljs-name,.hljs-section{color:#8250df}
+    .hljs-variable,.hljs-attribute,.hljs-tag{color:#116329}
+    blockquote{
+      border-left:4px solid #6366f1;
+      padding:.5em 1em;margin:1em 0;
+      color:#4b5563;background:#f9fafb;
+      border-radius:0 6px 6px 0;font-style:italic;
+    }
+    table{width:100%;border-collapse:collapse;margin:1em 0;font-size:.93em;page-break-inside:avoid}
+    th{background:#f6f8fa;font-weight:600;color:#1a1d23;border:1px solid #d0d7de;padding:9px 13px;text-align:left}
+    td{border:1px solid #d0d7de;padding:9px 13px;color:#1a1d23}
+    tr:nth-child(even) td{background:#fafbfc}
+    ul,ol{margin:.7em 0;padding-left:2em}
+    li{margin:.3em 0;line-height:1.7}
+    li>p{margin:.3em 0}
+    hr{border:none;border-top:1px solid #e5e7eb;margin:1.8em 0}
+    img{max-width:100%;height:auto;border-radius:6px}
+    .mermaid{text-align:center;margin:1em 0;page-break-inside:avoid}
+    .mermaid svg{max-width:100%}
+    .mermaid svg text,.mermaid svg tspan,.mermaid svg .nodeLabel,
+    .mermaid svg .edgeLabel,.mermaid svg .label,.mermaid svg [class*="Label"],
+    .mermaid svg [class*="Text"]{fill:#1a1d23!important}
+    .task-li{list-style:none;padding-left:0;margin-left:0}
+    .task-li input{margin-right:.5em}
+    .katex-display{overflow-x:auto;margin:1em 0;page-break-inside:avoid}
+    .katex{font-size:1.05em}
+    footer{margin-top:2em;padding-top:1em;border-top:1px solid #e5e7eb;font-size:.78em;color:#9ca3af;text-align:center}
+    ${themeExtra}
+  `;
+
+  /* wrap in a container sized exactly to paper width */
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `
+    position:absolute;left:-9999px;top:0;
+    width:${px(w)}px;
+    background:#ffffff;overflow:visible;
+  `;
+  const styleEl = document.createElement('style');
+  styleEl.textContent = css;
+  wrapper.appendChild(styleEl);
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  return {el:clone, wrapper, paper, orient};
+}
+
+/* ── Download PDF using html2pdf.js (exact same config as site) ── */
+async function doDownloadPDF(){
+  const content = document.getElementById('md-body');
+  if(!content||!edEl.value.trim()){alert('Please enter some Markdown first!');return}
+
+  const paper  = document.getElementById('sel-paper').value;
+  const orient = document.getElementById('sel-orient').value;
+
+  showOverlay(true);
+
+  /* wait for any pending mermaid renders */
+  await new Promise(r=>setTimeout(r,300));
+
+  const {el, wrapper} = buildPdfContent();
+
+  const opt = {
+    margin:     [12, 12, 14, 12],
+    filename:   'markdown_output_'+paper+'_'+orient+'.pdf',
+    image:      {type:'jpeg', quality:0.98},
+    html2canvas:{scale:2, useCORS:true, logging:false, scrollY:0},
+    jsPDF:      {unit:'mm', format:paper, orientation:orient}
+  };
+
+  try {
+    await html2pdf().set(opt).from(el).save();
+    toast('PDF downloaded!');
+  } catch(e){
+    console.error(e);
+    toast('PDF error — try again');
+  } finally {
+    document.body.removeChild(wrapper);
+    showOverlay(false);
+  }
+}
+
+/* ── Export HTML (exact same as site) ── */
+function doExportHTML(){
+  const content = document.getElementById('md-body');
+  if(!content||!edEl.value.trim()){alert('Please enter some Markdown first!');return}
+
+  const font = document.getElementById('sel-font').value;
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Document - ConvertMD2PDF</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"/>
+    <style>
+        body{font-family:${font};line-height:1.7;max-width:820px;margin:0 auto;padding:48px 32px;color:#1a1d23;background:#fff;font-size:15px}
+        h1{color:#6366f1;font-size:1.85em;font-weight:700;margin:1.5em 0 .55em;padding-bottom:.4em;border-bottom:2px solid #6366f1;line-height:1.3}
+        h1:first-child{margin-top:0}
+        h2{color:#8b5cf6;font-size:1.5em;font-weight:600;margin:1.5em 0 .55em;padding:.1em 0 .1em 1rem;border-left:4px solid #8b5cf6;line-height:1.3}
+        h3{color:#1a1d23;font-size:1.2em;font-weight:700;margin:1.4em 0 .4em;line-height:1.3}
+        h4{color:#1a1d23;font-size:1.05em;font-weight:700;margin:1.2em 0 .35em}
+        p{margin:.75em 0}
+        a{color:#6366f1;text-decoration:none}
+        a:hover{text-decoration:underline}
+        :not(pre)>code{background:#f3f4f6;color:#6366f1;padding:2px 6px;border-radius:4px;font-family:'Source Code Pro',monospace;font-size:.88em;border:1px solid #e5e7eb;font-weight:500}
+        pre{background:#f6f8fa;color:#24292f;padding:16px 20px;border-radius:8px;border:1px solid #d0d7de;overflow-x:auto;margin:1em 0;font-size:.88em;line-height:1.55}
+        pre code{background:none;padding:0;color:inherit;font-family:'Source Code Pro',monospace}
+        blockquote{border-left:4px solid #6366f1;padding:.5em 1em;margin:1em 0;color:#4b5563;background:#f9fafb;border-radius:0 6px 6px 0;font-style:italic}
+        table{width:100%;border-collapse:collapse;margin:1em 0;font-size:.95em}
+        th{background:#f6f8fa;font-weight:600;border:1px solid #d0d7de;padding:10px 14px;text-align:left}
+        td{border:1px solid #d0d7de;padding:10px 14px}
+        tr:nth-child(even){background:#fafbfc}
+        ul,ol{margin:.7em 0;padding-left:2em}
+        li{margin:.3em 0;line-height:1.7}
+        hr{border:none;border-top:1px solid #e5e7eb;margin:1.8em 0}
+        img{max-width:100%;height:auto;border-radius:6px}
+    </style>
+</head>
+<body>
+${content.innerHTML}
+<footer>
+    Generated with <a href="https://convertmd2pdf.com">ConvertMD2PDF</a>
+</footer>
+</body>
+</html>`;
+  dl(slug(getTitle()||'document')+'.html', html, 'text/html');
+  toast('HTML exported');
+}
+
+/* ── Export DOCX using docx.js ── */
+async function doExportDOCX(){
+  if(!edEl.value.trim()){alert('Please enter some Markdown first!');return}
+  if(typeof docx==='undefined'){toast('docx.js not loaded');return}
+
+  try{
+    const {Document,Packer,Paragraph,TextRun,HeadingLevel,
+           Table,TableRow,TableCell,WidthType,BorderStyle}=docx;
+    const children=[];
+    const nodes=document.getElementById('md-body').children;
+
+    for(const node of nodes){
+      const tag=node.tagName?.toLowerCase();
+      if(tag==='h1')children.push(new Paragraph({text:node.textContent,heading:HeadingLevel.HEADING_1,spacing:{before:240,after:120}}));
+      else if(tag==='h2')children.push(new Paragraph({text:node.textContent,heading:HeadingLevel.HEADING_2,spacing:{before:200,after:100}}));
+      else if(tag==='h3')children.push(new Paragraph({text:node.textContent,heading:HeadingLevel.HEADING_3,spacing:{before:180,after:80}}));
+      else if(tag==='p')children.push(new Paragraph({children:[new TextRun(node.textContent)],spacing:{after:120}}));
+      else if(tag==='pre')children.push(new Paragraph({children:[new TextRun({text:node.textContent,font:'Courier New',shading:{fill:'1F2937'},color:'E5E7EB'})],spacing:{before:120,after:120}}));
+      else if(tag==='blockquote')children.push(new Paragraph({children:[new TextRun({text:node.textContent,italics:true})],indent:{left:720},border:{left:{style:BorderStyle.SINGLE,size:24,color:'6366F1'}},spacing:{before:120,after:120}}));
+      else if(tag==='ul'||tag==='ol'){
+        for(const li of node.querySelectorAll(':scope > li'))
+          children.push(new Paragraph({text:li.textContent,bullet:{level:0},spacing:{after:60}}));
+      }
+      else if(tag==='hr')children.push(new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:6,color:'E5E7EB'}},spacing:{before:240,after:240}}));
+      else if(node.textContent?.trim())children.push(new Paragraph({children:[new TextRun(node.textContent)],spacing:{after:120}}));
+    }
+
+    const doc=new Document({sections:[{properties:{},children:children.length?children:[new Paragraph('')]}]});
+    const blob=await Packer.toBlob(doc);
+    saveAs(blob,'document.docx');
+    toast('DOCX exported');
+  }catch(e){
+    console.error(e);
+    toast('DOCX export failed');
+  }
+}
+
+/* ── Utilities ── */
+function showOverlay(v){document.getElementById('pdf-overlay').classList.toggle('show',v)}
+function getTitle(){const h=document.querySelector('#md-body h1');return h?h.textContent.trim():''}
+function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+function dl(name,content,mime){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download=name;a.click();URL.revokeObjectURL(a.href);
+}
+let _tt;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('on');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),2600);
+}
+
+/* ── Templates ── */
+const TPLS={
+sample:`# Welcome to ConvertMD2PDF
+
+This is a **sample document** to showcase the converter's features.
+
+## Features Demonstrated
+
+### Text Formatting
+- **Bold text** for emphasis
+- *Italic text* for style
+- \`inline code\` for technical terms
+
+### Code Blocks
+\`\`\`javascript
+function greet(name) {
+    return \`Hello, \${name}!\`;
+}
+console.log(greet('World'));
+\`\`\`
+
+### Tables
+| Feature | Status |
+|---------|--------|
+| Real-time Preview | ✅ |
+| PDF Export | ✅ |
+| Dark Mode | ✅ |
+
+### Blockquotes
+> "The best way to predict the future is to create it."
+> — Peter Drucker
+
+### Mathematics (LaTeX)
+- **Inline math**: The Pythagorean theorem is $a^2 + b^2 = c^2$.
+- **Quadratic Formula**: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$
+- **Block math**:
+$$\\int_{a}^{b} x^2 \\, dx = \\frac{b^3 - a^3}{3}$$
+- **Summation**:
+$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$
+
+### Diagrams (Mermaid)
+\`\`\`mermaid
+flowchart TD
+    A[Start] --> B{Is it Markdown?}
+    B -- Yes --> C[Render HTML]
+    B -- No --> D[Check LaTeX]
+    D --> E[Render Math]
+    C --> F[Success]
+    E --> F
+\`\`\`
+
+### Lists
+1. First ordered item
+2. Second ordered item
+3. Third ordered item
+
+---
+
+*Try editing this content or clear it to start fresh!*
+`,
+readme:`# Project Name
+
+> Short description of the project.
+
+## Features
+
+- Feature one
+- Feature two
+- Feature three
+
+## Installation
+
+\`\`\`bash
+npm install project-name
+\`\`\`
+
+## Usage
+
+\`\`\`js
+const project = require('project-name')
+project.doSomething()
+\`\`\`
+
+## License
+
+MIT © ${new Date().getFullYear()}
+`,
+resume:`# Jane Doe
+
+**Email:** jane@example.com &nbsp;|&nbsp; **GitHub:** github.com/janedoe &nbsp;|&nbsp; **City:** New York, NY
+
+---
+
+## Summary
+
+Software engineer with 5+ years experience building scalable web applications.
+
+## Experience
+
+### Senior Software Engineer — Acme Corp
+*Jan 2022 – Present*
+
+- Led microservices migration, cutting deploy time by 60%
+- Mentored 3 junior engineers
+
+### Software Engineer — Startup Inc
+*Jun 2019 – Dec 2021*
+
+- Built real-time dashboard for 10,000+ concurrent users
+
+## Education
+
+**B.S. Computer Science** — State University, 2019
+
+## Skills
+
+TypeScript · React · Node.js · PostgreSQL · Docker · AWS
+`,
+report:`# Technical Report
+
+**Author:** Your Name
+**Date:** ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}
+**Version:** 1.0
+
+---
+
+## Table of Contents
+
+1. Introduction
+2. Methodology
+3. Findings
+4. Recommendations
+5. Conclusion
+
+## 1. Introduction
+
+This report presents an analysis of [subject].
+
+## 2. Methodology
+
+Data was collected from various sources including...
+
+## 3. Findings
+
+| Metric | Value | Change |
+|--------|-------|--------|
+| Metric 1 | 100 | +10% |
+| Metric 2 | 250 | -5% |
+
+## 4. Recommendations
+
+1. **Recommendation 1:** Description and rationale
+2. **Recommendation 2:** Description and rationale
+
+## 5. Conclusion
+
+In conclusion, this analysis has shown that...
+
+---
+
+*Report generated with ConvertMD2PDF*
+`,
+meeting:`# Meeting Notes: Team Sync
+
+**Date:** ${new Date().toLocaleDateString()}
+**Attendees:** Alice, Bob, Charlie
+
+---
+
+## Agenda
+
+1. Sprint review
+2. Planning
+3. Blockers
+
+## Discussion
+
+### Sprint Review
+- ✅ Completed: Feature X, Bug fix Y
+- ⏩ Deferred: Feature Z
+
+### Timeline
+\`\`\`mermaid
+gantt
+  title Sprint Timeline
+  dateFormat YYYY-MM-DD
+  section Dev
+  Feature A :a1, ${new Date().toISOString().slice(0,10)}, 5d
+  Feature B :after a1, 3d
+\`\`\`
+
+## Action Items
+
+- [ ] Alice — Update docs (Friday)
+- [ ] Bob — Deploy to staging
+- [ ] Charlie — Schedule follow-up
+`,
+api:`# API Reference
+
+**Base URL:** \`https://api.example.com/v1\`
+**Auth:** \`Authorization: Bearer <token>\`
+
+---
+
+## GET /users
+
+Returns a paginated list of users.
+
+**Query Parameters**
+
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| page  | int  | No       | 1       |
+| limit | int  | No       | 20      |
+
+**Response 200**
+
+\`\`\`json
+{
+  "data": [{ "id": 1, "name": "Alice" }],
+  "total": 42,
+  "page": 1
+}
+\`\`\`
+
+## POST /users
+
+\`\`\`json
+{ "name": "Bob", "email": "bob@example.com" }
+\`\`\`
+`,
+letter:`# Jane Smith
+
+123 Main Street, City, State 12345
+(555) 987-6543 | jane.smith@email.com
+linkedin.com/in/janesmith
+
+---
+
+## Professional Cover Letter
+
+**To:** Hiring Manager
+**Company:** Tech Company Inc.
+**Position:** Senior Software Engineer
+**Date:** ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}
+
+---
+
+Dear Hiring Manager,
+
+I am writing to express my strong interest in the Senior Software Engineer position at Tech Company Inc. With over 5 years of experience in software development and a proven track record of delivering high-quality solutions, I am confident in my ability to contribute to your team.
+
+### Why I'm a Great Fit
+
+During my tenure at Previous Company, I:
+
+- Led a team of 5 engineers in delivering a critical platform redesign
+- Improved system performance by 40% through architectural improvements
+- Mentored junior developers and established best practices
+
+### Technical Expertise
+
+My technical skills align well with your requirements:
+
+- **Backend Development:** Node.js, Python, Go
+- **Cloud Infrastructure:** AWS, Kubernetes, Docker
+- **Databases:** PostgreSQL, MongoDB, Redis
+
+I am particularly drawn to Tech Company Inc. because of your innovative approach to [specific area]. I believe my experience in [relevant skill] would be valuable in helping your team achieve [specific goal].
+
+I would welcome the opportunity to discuss how my background and skills would be a great match for this position. Thank you for considering my application.
+
+Sincerely,
+
+**Jane Smith**
+`,
+blog:`# How to Build Better Software: A Practical Guide
+
+**Published:** ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}
+**Author:** Your Name
+**Reading Time:** 8 minutes
+
+---
+
+## Introduction
+
+Software development is a craft. Like any craft, it benefits from practiced fundamentals, deliberate iteration, and a healthy dose of pragmatism. In this post, we'll explore the principles that separate good software from great software.
+
+> "Programs must be written for people to read, and only incidentally for machines to execute." — Harold Abelson
+
+## 1. Write for Humans First
+
+Code is read far more often than it's written. Optimize for clarity:
+
+- Use meaningful names
+- Keep functions small and focused
+- Avoid premature abstraction
+
+\`\`\`python
+# ❌ Hard to understand
+def p(x, y):
+    return x * y * 0.0825
+
+# ✅ Self-documenting
+TAX_RATE = 0.0825
+def calculate_sales_tax(price, quantity):
+    return price * quantity * TAX_RATE
+\`\`\`
+
+## 2. Embrace Iteration
+
+Perfect is the enemy of done. Ship the smallest thing that works, then iterate based on real feedback.
+
+| Approach | Time to Feedback | Risk |
+|----------|------------------|------|
+| Big bang release | Weeks/months | High |
+| Iterative delivery | Days | Low |
+| Continuous deployment | Hours | Lowest |
+
+## 3. Test What Matters
+
+Not all tests are created equal. Focus on:
+
+1. **Critical paths** — User flows that impact revenue
+2. **Edge cases** — The conditions that catch you off-guard
+3. **Regressions** — Tests that prevent recurring bugs
+
+## Conclusion
+
+Better software comes from disciplined practice, not heroic effort. Master the fundamentals, ship often, and learn relentlessly.
+
+---
+
+*Thanks for reading! Subscribe for more posts on software craftsmanship.*
+`,
+notes:`# Study Notes
+
+**Subject:**
+**Date:** ${new Date().toLocaleDateString()}
+
+---
+
+## Key Concepts
+
+- Concept one — brief explanation
+- Concept two — brief explanation
+
+## Formulas
+
+Quadratic formula: $x = \\dfrac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$
+
+Euler's identity: $e^{i\\pi} + 1 = 0$
+
+## Summary
+
+Write your summary here.
+
+## Questions
+
+1. Question one?
+2. Question two?
+`};
+
+function loadTpl(name){edEl.value=TPLS[name]||'';render();toast('Template loaded')}
+
+/* ── Init ── */
+edEl.value = TPLS.sample;
+render();
+</script>
+</body>
+</html>
