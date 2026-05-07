@@ -610,3 +610,4 @@ temp/
 cache/
 .sass-cache/
 thumbs.db
+package-lock.json

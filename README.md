@@ -74,3 +74,7 @@ Contributions, issues, and feature requests are welcome. Feel free to open an is
 ## 📜 License
 
 Licensed under the **Apache License, Version 2.0**. See [LICENSE](LICENSE) for details.
+
+## 👤 Author
+
+**Karthikeyan Rajendran** — [github.com/reachtokarthikr](https://github.com/reachtokarthikr) · © 2026
