@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx serve *)"
+      "Bash(npx serve *)",
+      "Bash(Get-Content \"D:\\\\Sources\\\\Personal\\\\md-to-pdf-docx-html\\\\index.html\")",
+      "Bash(Measure-Object -Line)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(Start-Process \"http://localhost:49673\" -ErrorAction SilentlyContinue; Write-Output \"Opening browser\")",
+      "PowerShell(Start-Process \"http://localhost:49673/index.html\")",
+      "PowerShell(\\(Get-Content \"D:\\\\Sources\\\\Personal\\\\md-to-pdf-docx-html\\\\index.html\"\\).Count; Get-ChildItem \"D:\\\\Sources\\\\Personal\\\\md-to-pdf-docx-html\" | Select-Object Name, Length)",
+      "PowerShell(Start-Process \"http://localhost:49673\")",
+      "PowerShell(Start-Process \"http://localhost:4200\")"
     ]
   }
 }

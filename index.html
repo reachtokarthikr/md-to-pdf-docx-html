@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>ConvertMD2PDF | Markdown to PDF Converter</title>
 <link rel="icon" type="image/svg+xml" href="icon.svg"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#6366f1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="ConvertMD2PDF"/>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -27,6 +31,12 @@
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 <!-- FileSaver.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<!-- CodeMirror 5 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.css"/>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5/lib/codemirror.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5/mode/markdown/markdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5/addon/edit/closebrackets.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5/addon/display/placeholder.js"></script>
 
 <style>
 /* ── CSS Variables (dark theme default) ── */
@@ -242,16 +252,63 @@ body{
 }
 #find-close:hover{background:var(--tb-hover);color:var(--color-text)}
 
-/* ── Editor ── */
-#editor{
-  flex:1;resize:none;border:none;outline:none;
-  padding:20px 24px;
+/* ── CodeMirror editor ── */
+#editor-cm{
+  flex:1;overflow:hidden;position:relative;min-width:0;
+}
+.CodeMirror{
+  height:100%;min-width:0;
   font-family:'Source Code Pro','JetBrains Mono','Fira Code',monospace;
   font-size:13.5px;line-height:1.7;
-  color:var(--color-text);background:var(--bg-editor);tab-size:2;
+  background:var(--bg-editor) !important;
+  color:#f1f5f9 !important;
+  border:none;
 }
-#editor::placeholder{color:var(--editor-placeholder)}
-#editor.drag-over{outline:2px dashed #6366f1;outline-offset:-4px}
+[data-theme="light"] .CodeMirror{color:#1f2937 !important}
+/* Padding on lines, NOT on scroll — keeps CodeMirror's internal scrollbar hack intact */
+.CodeMirror-lines{padding:16px 20px}
+.CodeMirror-cursor{border-left:2px solid var(--color-text)}
+.CodeMirror-focused .CodeMirror-selected,.CodeMirror-selected{background:rgba(99,102,241,.22)}
+.CodeMirror-gutters{
+  background:var(--bg-surface) !important;
+  border-right:1px solid var(--border);
+  padding-right:2px;
+}
+.CodeMirror-linenumber{color:var(--color-faint);padding:0 6px 0 4px}
+.CodeMirror-scroll::-webkit-scrollbar{width:6px;height:6px}
+.CodeMirror-scroll::-webkit-scrollbar-track{background:transparent}
+.CodeMirror-scroll::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb);border-radius:3px}
+.CodeMirror-scroll::-webkit-scrollbar-thumb:hover{background:var(--scrollbar-hover)}
+/* ── Dark mode token colors (bright/pastel for contrast on dark bg) ── */
+.cm-s-default .cm-header{color:#ddd6fe !important;font-weight:700}
+.cm-s-default .cm-header-1{font-size:1.15em}
+.cm-s-default .cm-header-2{font-size:1.08em}
+.cm-s-default .cm-strong{color:#ffffff !important;font-weight:700}
+.cm-s-default .cm-em{color:#fde68a !important;font-style:italic}
+.cm-s-default .cm-link{color:#bae6fd !important}
+.cm-s-default .cm-url{color:#a7f3d0 !important}
+.cm-s-default .cm-code{color:#fde047 !important;font-family:'Source Code Pro',monospace}
+.cm-s-default .cm-comment{color:#cbd5e1 !important}
+.cm-s-default .cm-quote{color:#c7d2fe !important;font-style:italic}
+.cm-s-default .cm-hr{color:#9ca3af !important}
+.cm-s-default .cm-tag,.cm-s-default .cm-bracket{color:#fbcfe8 !important}
+.cm-s-default .cm-string{color:#bbf7d0 !important}
+.CodeMirror-placeholder{color:var(--editor-placeholder) !important;font-style:italic}
+#editor-cm.drag-over .CodeMirror{outline:2px dashed #6366f1;outline-offset:-4px}
+/* ── Light mode token overrides (keep dark/readable on light bg) ── */
+[data-theme="light"] .CodeMirror{background:var(--bg-editor) !important;color:#1f2937 !important}
+[data-theme="light"] .CodeMirror-gutters{background:var(--bg-surface) !important}
+[data-theme="light"] .cm-s-default .cm-header{color:#4f46e5 !important}
+[data-theme="light"] .cm-s-default .cm-strong{color:#111827 !important}
+[data-theme="light"] .cm-s-default .cm-em{color:#374151 !important}
+[data-theme="light"] .cm-s-default .cm-link{color:#2563eb !important}
+[data-theme="light"] .cm-s-default .cm-url{color:#16a34a !important}
+[data-theme="light"] .cm-s-default .cm-code{color:#b45309 !important}
+[data-theme="light"] .cm-s-default .cm-comment{color:#6b7280 !important}
+[data-theme="light"] .cm-s-default .cm-quote{color:#4b5563 !important}
+[data-theme="light"] .cm-s-default .cm-hr{color:#9ca3af !important}
+[data-theme="light"] .cm-s-default .cm-tag,[data-theme="light"] .cm-s-default .cm-bracket{color:#be185d !important}
+[data-theme="light"] .cm-s-default .cm-string{color:#16a34a !important}
 
 /* ── Preview area ── */
 .prev-area{
@@ -581,8 +638,8 @@ kbd{
   <button class="tb" title="Blockquote" aria-label="Blockquote" onclick="fmtLine('> ')">❝</button>
   <button class="tb" title="List" aria-label="Bullet list" onclick="fmtLine('- ')">≡</button>
   <div class="sep" role="separator"></div>
-  <button class="tb" title="Undo (Ctrl+Z)" aria-label="Undo" onclick="document.execCommand('undo')">↩</button>
-  <button class="tb" title="Redo (Ctrl+Y)" aria-label="Redo" onclick="document.execCommand('redo')">↪</button>
+  <button class="tb" title="Undo (Ctrl+Z)" aria-label="Undo" onclick="cm.undo();render()">↩</button>
+  <button class="tb" title="Redo (Ctrl+Y)" aria-label="Redo" onclick="cm.redo();render()">↪</button>
   <button class="tb" title="Copy rendered HTML" aria-label="Copy as HTML" onclick="copyHtml()">⎘ HTML</button>
   <div class="sep" role="separator"></div>
   <div class="dd" id="dd-tpl">
@@ -672,7 +729,7 @@ kbd{
         <button class="find-btn" onclick="doReplaceAll()" aria-label="Replace all">All</button>
       </div>
     </div>
-    <textarea id="editor" placeholder="Type or paste Markdown here, or drag &amp; drop a .md or image file…" spellcheck="true" aria-label="Markdown editor"></textarea>
+    <div id="editor-cm" role="textbox" aria-multiline="true" aria-label="Markdown editor"></div>
   </div>
 
   <!-- Preview pane -->
@@ -890,9 +947,52 @@ marked.use({renderer:rdr, gfm:true, breaks:false});
 
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
+/* ── CodeMirror init ── */
+const _cmEl = document.getElementById('editor-cm');
+const cm = CodeMirror(_cmEl, {
+  mode: 'markdown',
+  lineNumbers: true,
+  lineWrapping: true,
+  tabSize: 2,
+  indentWithTabs: false,
+  autoCloseBrackets: false,
+  autofocus: true,
+  spellcheck: true,
+  inputStyle: 'textarea',
+  placeholder: 'Type or paste Markdown here, or drag & drop a .md or image file…',
+  extraKeys: {
+    'Ctrl-B': ()=>{ fmt('**','**'); },
+    'Cmd-B':  ()=>{ fmt('**','**'); },
+    'Ctrl-I': ()=>{ fmt('*','*'); },
+    'Cmd-I':  ()=>{ fmt('*','*'); },
+    'Ctrl-K': ()=>{ fmt('[','](url)'); },
+    'Cmd-K':  ()=>{ fmt('[','](url)'); },
+    'Shift-Ctrl-C': ()=>{ fmt('`','`'); },
+    'Shift-Cmd-C':  ()=>{ fmt('`','`'); },
+    'Ctrl-S': ()=>{ saveMd(); },
+    'Cmd-S':  ()=>{ saveMd(); },
+    'Ctrl-P': ()=>{ doDownloadPDF(); },
+    'Cmd-P':  ()=>{ doDownloadPDF(); },
+    'Ctrl-F': ()=>{ openFindBar(); },
+    'Cmd-F':  ()=>{ openFindBar(); },
+    'Ctrl-/': ()=>{ showHelp(); },
+    'Cmd-/':  ()=>{ showHelp(); },
+  }
+});
+
+/* Textarea-compatible shim (for functions that still use edEl.value etc.) */
+const edEl = {
+  get value()          { return cm.getValue(); },
+  set value(v)         { cm.setValue(v); },
+  get selectionStart() { return cm.indexFromPos(cm.getCursor('from')); },
+  get selectionEnd()   { return cm.indexFromPos(cm.getCursor('to')); },
+  setSelectionRange(s,e){ cm.setSelection(cm.posFromIndex(s),cm.posFromIndex(e)); },
+  focus()              { cm.focus(); },
+  get classList()      { return _cmEl.classList; },
+};
+
 /* ── Render ── */
 let _rt;
-const edEl = document.getElementById('editor');
 
 function render(){clearTimeout(_rt);_rt=setTimeout(_do,130)}
 
@@ -1020,7 +1120,7 @@ function restoreSettings(){
     }
 
     if(content !== null){
-      edEl.value = content;
+      cm.setValue(content); cm.clearHistory();
       applyTheme(); applyFont(); applyView();
       render();
       if(content.trim()) toast('↺ Session restored');
@@ -1058,11 +1158,8 @@ function updateStatus(){
   document.getElementById('stat-read').textContent  = mins+' min read';
 }
 function updateCursor(){
-  const s = edEl.selectionStart;
-  const text = edEl.value.slice(0, s);
-  const line = text.split('\n').length;
-  const col  = s - text.lastIndexOf('\n');
-  document.getElementById('stat-cursor').textContent = `Ln ${line}, Col ${col}`;
+  const cur = cm.getCursor();
+  document.getElementById('stat-cursor').textContent = `Ln ${cur.line+1}, Col ${cur.ch+1}`;
 }
 
 /* ── TOC ── */
@@ -1102,7 +1199,7 @@ function openFindBar(){
   const bar = document.getElementById('find-bar');
   bar.classList.add('show');
   const fi = document.getElementById('find-input');
-  const sel = edEl.value.slice(edEl.selectionStart, edEl.selectionEnd);
+  const sel = cm.getSelection();
   if(sel && sel.length < 80) fi.value = sel;
   fi.focus(); fi.select();
   doFind();
@@ -1111,7 +1208,7 @@ function closeFindBar(){
   document.getElementById('find-bar').classList.remove('show');
   document.getElementById('find-match-count').textContent='';
   _findMatches=[]; _findIdx=0;
-  edEl.focus();
+  cm.focus();
 }
 function toggleFindOpt(opt){
   if(opt==='case'){
@@ -1132,7 +1229,7 @@ function doFind(){
   const cnt = document.getElementById('find-match-count');
   _findMatches=[];
   if(!q){cnt.textContent='';return}
-  const text = edEl.value;
+  const text = cm.getValue();
   try{
     const flags = _findCase ? 'g' : 'gi';
     const re = _findRegex ? new RegExp(q, flags) : new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), flags);
@@ -1150,21 +1247,18 @@ function findNav(dir){
   if(!_findMatches.length) return;
   _findIdx = (_findIdx + dir + _findMatches.length) % _findMatches.length;
   const m = _findMatches[_findIdx];
-  edEl.focus();
-  edEl.setSelectionRange(m.start, m.end);
-  /* scroll into view */
-  const linesB = edEl.value.slice(0,m.start).split('\n').length - 1;
-  const lineH  = 23;
-  edEl.scrollTop = Math.max(0, linesB * lineH - 80);
+  const from = cm.posFromIndex(m.start);
+  const to   = cm.posFromIndex(m.end);
+  cm.setSelection(from, to);
+  cm.scrollIntoView({from, to}, 80);
+  cm.focus();
   document.getElementById('find-match-count').textContent = `${_findIdx+1}/${_findMatches.length}`;
 }
 function doReplace(){
   if(!_findMatches.length){doFind();return}
   const m = _findMatches[_findIdx];
   const rep = document.getElementById('replace-input').value;
-  const v = edEl.value;
-  edEl.value = v.slice(0,m.start) + rep + v.slice(m.end);
-  edEl.setSelectionRange(m.start, m.start+rep.length);
+  cm.replaceRange(rep, cm.posFromIndex(m.start), cm.posFromIndex(m.end));
   render(); doFind();
 }
 function doReplaceAll(){
@@ -1174,18 +1268,16 @@ function doReplaceAll(){
   try{
     const flags = _findCase ? 'g' : 'gi';
     const re = _findRegex ? new RegExp(q, flags) : new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), flags);
-    const count = (edEl.value.match(re)||[]).length;
-    edEl.value = edEl.value.replace(re, rep);
+    const count = (cm.getValue().match(re)||[]).length;
+    cm.setValue(cm.getValue().replace(re, rep));
     render(); doFind();
     toast(`Replaced ${count} occurrence${count!==1?'s':''}`);
   }catch(e){toast('Invalid regex')}
 }
 
 /* ── Editor events ── */
-edEl.addEventListener('input', ()=>{render();updateCursor()});
-edEl.addEventListener('click', updateCursor);
-edEl.addEventListener('keyup', updateCursor);
-edEl.addEventListener('selectionchange', updateCursor);
+cm.on('change', ()=>{ render(); updateCursor(); });
+cm.on('cursorActivity', updateCursor);
 
 /* Find input live search */
 document.getElementById('find-input').addEventListener('input', ()=>{_findIdx=0;doFind()});
@@ -1199,21 +1291,17 @@ document.getElementById('replace-input').addEventListener('keydown', e=>{
 });
 
 /* ── Drag/drop — .md files AND images ── */
-edEl.addEventListener('dragover',e=>{e.preventDefault();edEl.classList.add('drag-over')});
-edEl.addEventListener('dragleave',()=>edEl.classList.remove('drag-over'));
-edEl.addEventListener('drop',e=>{
-  e.preventDefault();edEl.classList.remove('drag-over');
+_cmEl.addEventListener('dragover',e=>{e.preventDefault();_cmEl.classList.add('drag-over')});
+_cmEl.addEventListener('dragleave',()=>_cmEl.classList.remove('drag-over'));
+_cmEl.addEventListener('drop',e=>{
+  e.preventDefault();_cmEl.classList.remove('drag-over');
   const f = e.dataTransfer.files[0];
   if(!f) return;
-  if(f.type.startsWith('image/')){
-    embedImageFile(f);
-  } else {
-    readFile(f);
-  }
+  if(f.type.startsWith('image/')){ embedImageFile(f); } else { readFile(f); }
 });
 
 /* ── Paste image ── */
-edEl.addEventListener('paste',e=>{
+cm.on('paste',(_cm,e)=>{
   const items = e.clipboardData?.items;
   if(!items) return;
   for(const item of items){
@@ -1232,30 +1320,15 @@ function embedImageFile(file){
     const b64 = ev.target.result;
     const name = file.name ? file.name.replace(/\.[^.]+$/,'') : 'image';
     const md = `![${name}](${b64})`;
-    const s = edEl.selectionStart;
-    edEl.value = edEl.value.slice(0,s) + md + edEl.value.slice(edEl.selectionEnd);
-    edEl.selectionStart = edEl.selectionEnd = s + md.length;
-    edEl.focus();
+    cm.replaceSelection(md);
+    cm.focus();
     render();
     toast('Image embedded as base64');
   };
   reader.readAsDataURL(file);
 }
 
-/* ── Keyboard shortcuts ── */
-edEl.addEventListener('keydown',e=>{
-  const ctrl = e.ctrlKey || e.metaKey;
-  if(!ctrl) return;
-  const k = e.key.toLowerCase();
-  if(k==='b'){e.preventDefault();fmt('**','**')}
-  else if(k==='i'){e.preventDefault();fmt('*','*')}
-  else if(k==='k'){e.preventDefault();fmt('[','](url)')}
-  else if(k==='c' && e.shiftKey){e.preventDefault();fmt('`','`')}
-  else if(k==='p'){e.preventDefault();doDownloadPDF()}
-  else if(k==='s'){e.preventDefault();saveMd()}
-  else if(k==='f'){e.preventDefault();openFindBar()}
-  else if(k==='/' || (k==='/' && e.shiftKey)){e.preventDefault();showHelp()}
-});
+/* Keyboard shortcuts are registered via CodeMirror extraKeys above */
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){hideHelp();closeFindBar()}
   if((e.ctrlKey||e.metaKey) && e.key==='/'){e.preventDefault();showHelp()}
@@ -1279,27 +1352,35 @@ function trapFocus(modal){
 
 /* ── Format helpers ── */
 function fmt(before,after){
-  const s=edEl.selectionStart,e=edEl.selectionEnd;
-  const sel=edEl.value.slice(s,e)||'text';
-  edEl.value=edEl.value.slice(0,s)+before+sel+after+edEl.value.slice(e);
-  edEl.selectionStart=s+before.length;
-  edEl.selectionEnd=s+before.length+sel.length;
-  edEl.focus();render();
+  const sel = cm.getSelection() || 'text';
+  const from = cm.getCursor('from');
+  cm.replaceSelection(before+sel+after);
+  cm.setSelection(
+    {line:from.line, ch:from.ch+before.length},
+    {line:from.line, ch:from.ch+before.length+sel.length}
+  );
+  cm.focus(); render();
 }
 function fmtLine(prefix){
-  const s=edEl.selectionStart;
-  const ls=edEl.value.lastIndexOf('\n',s-1)+1;
-  edEl.value=edEl.value.slice(0,ls)+prefix+edEl.value.slice(ls);
-  edEl.selectionStart=edEl.selectionEnd=s+prefix.length;
-  edEl.focus();render();
+  const cur = cm.getCursor();
+  cm.replaceRange(prefix, {line:cur.line,ch:0}, {line:cur.line,ch:0});
+  cm.setCursor({line:cur.line, ch:cur.ch+prefix.length});
+  cm.focus(); render();
 }
-function fmtBlock(){fmt('```\n','\n```')}
+function fmtBlock(){
+  const sel = cm.getSelection();
+  if(sel){ cm.replaceSelection('```\n'+sel+'\n```'); }
+  else {
+    const cur = cm.getCursor();
+    cm.replaceRange('```\n\n```', {line:cur.line,ch:cur.ch});
+    cm.setCursor({line:cur.line+1,ch:0});
+  }
+  cm.focus(); render();
+}
 function fmtTable(){
   const t='\n| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell     | Cell     | Cell     |\n';
-  const s=edEl.selectionStart;
-  edEl.value=edEl.value.slice(0,s)+t+edEl.value.slice(s);
-  edEl.selectionStart=edEl.selectionEnd=s+t.length;
-  edEl.focus();render();
+  cm.replaceRange(t, cm.getCursor());
+  cm.focus(); render();
 }
 
 /* ── Dropdowns ── */
@@ -1319,20 +1400,20 @@ document.addEventListener('click',e=>{if(!e.target.closest('.dd'))closeDds()});
 function openFile(e){const f=e.target.files[0];if(f)readFile(f);e.target.value=''}
 function readFile(f){
   const r=new FileReader();
-  r.onload=ev=>{edEl.value=ev.target.result;render();toast('Opened: '+f.name)};
+  r.onload=ev=>{ cm.setValue(ev.target.result); cm.clearHistory(); render(); toast('Opened: '+f.name); };
   r.readAsText(f);
 }
 function saveMd(){
   const t=getTitle()||'document';
-  dl(slug(t)+'.md',edEl.value,'text/markdown');
+  dl(slug(t)+'.md',cm.getValue(),'text/markdown');
   toast('Saved '+slug(t)+'.md');
 }
 function clearAll(){
-  if(!edEl.value||confirm('Clear the editor?')){edEl.value='';render();toast('Cleared')}
+  if(!cm.getValue()||confirm('Clear the editor?')){ cm.setValue(''); cm.clearHistory(); render(); toast('Cleared'); }
 }
 function newDoc(){
-  if(edEl.value.trim() && !confirm('Start a new document? Current content will be lost.'))return;
-  edEl.value='# New Document\n\nStart writing here…\n';render();toast('New document');
+  if(cm.getValue().trim() && !confirm('Start a new document? Current content will be lost.'))return;
+  cm.setValue('# New Document\n\nStart writing here…\n'); cm.clearHistory(); render(); toast('New document');
 }
 function copyHtml(){
   const content = document.getElementById('md-body').innerHTML;
@@ -2305,12 +2386,12 @@ Write your summary here.
 2. Question two?
 `};
 
-function loadTpl(name){edEl.value=TPLS[name]||'';render();toast('Template loaded')}
+function loadTpl(name){ cm.setValue(TPLS[name]||''); cm.clearHistory(); render(); toast('Template loaded'); }
 
 /* ── Init ── */
 const restored = restoreSettings();
 if(!restored){
-  edEl.value = TPLS.sample;
+  cm.setValue(TPLS.sample); cm.clearHistory();
   applyTheme(); applyFont(); applyView();
   render();
 }
@@ -2319,5 +2400,14 @@ updateCursor();
 <footer style="text-align:center;padding:1.2em;font-size:.8em;color:var(--color-faint);border-top:1px solid var(--border);margin-top:0">
   © 2026 <a href="https://github.com/reachtokarthikr" target="_blank" style="color:var(--color-muted);text-decoration:none;">Karthikeyan Rajendran</a>
 </footer>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .then(r=>console.log('[SW] registered',r.scope))
+      .catch(e=>console.warn('[SW] registration failed',e));
+  });
+}
+</script>
 </body>
 </html>
