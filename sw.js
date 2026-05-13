@@ -1,4 +1,4 @@
-const CACHE = 'md2pdf-v3';
+const CACHE = 'from-md-to-pdf-v1';
 
 const PRECACHE = [
   './',

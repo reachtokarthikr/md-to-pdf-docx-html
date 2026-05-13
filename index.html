@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>ConvertMD2PDF | Markdown to PDF Converter</title>
+<title>From MD To PDF</title>
 <link rel="icon" type="image/svg+xml" href="icon.svg"/>
 <link rel="manifest" href="manifest.webmanifest"/>
 <meta name="theme-color" content="#6366f1"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-title" content="ConvertMD2PDF"/>
+<meta name="apple-mobile-web-app-title" content="From MD To PDF"/>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -439,6 +439,7 @@ body{
 .btn-del:hover{background:rgba(248,113,113,.1)}
 .btn-pri{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-color:#6366f1;font-weight:600;box-shadow:0 1px 8px rgba(99,102,241,.4)}
 .btn-pri:hover{background:linear-gradient(135deg,#4f46e5,#7c3aed)}
+.btn:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
 
 /* ── Status bar ── */
 .status-bar{
@@ -611,7 +612,7 @@ kbd{
 
 <!-- ── Nav ── -->
 <nav class="nav" role="navigation" aria-label="Main navigation">
-  <a href="#" class="nav-logo"><div class="ico"><img src="icon.svg" alt="ConvertMD2PDF logo"/></div>ConvertMD2PDF</a>
+  <a href="#" class="nav-logo"><div class="ico"><img src="icon.svg" alt="From MD To PDF logo"/></div>From MD To PDF</a>
   <a href="#" class="nav-link on">Home</a>
   <a href="#" class="nav-link">About</a>
   <a href="#" class="nav-link">Help</a>
@@ -766,6 +767,7 @@ kbd{
   <button class="btn btn-out" onclick="copyHtml()" aria-label="Copy HTML to clipboard">⎘ Copy HTML</button>
   <button class="btn btn-out" onclick="doExportHTML()" aria-label="Export as HTML file">Export HTML</button>
   <button class="btn btn-out" onclick="doExportDOCX()" aria-label="Export as DOCX file">Export DOCX</button>
+  <button class="btn btn-out" id="copyPdfBtn" onclick="doCopyPDF()" aria-label="Copy PDF to clipboard">⎘ Copy PDF</button>
   <button class="btn btn-out" onclick="showPdfSettings()" title="PDF &amp; Export Settings" aria-label="PDF settings">⚙ Settings</button>
   <button class="btn btn-pri" id="pdfBtn" onclick="doDownloadPDF()" title="Download PDF (Ctrl+P)" aria-label="Download PDF">⬇ Download PDF</button>
 </div>
@@ -881,6 +883,7 @@ $math$     $$display math$$
       <div class="settings-divider"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn btn-out" onclick="resetPdfSettings()">Reset defaults</button>
+        <button class="btn btn-out" id="copyPdfSettingsBtn" onclick="hidePdfSettings();doCopyPDF()">⎘ Copy PDF now</button>
         <button class="btn btn-pri" onclick="hidePdfSettings();doDownloadPDF()">⬇ Download PDF now</button>
       </div>
     </div>
@@ -1049,8 +1052,29 @@ function applyView(){
 }
 
 /* ── Autosave / restore ── */
-const LS = 'cmd2pdf_';
+const LEGACY_LS = 'cmd2pdf_';
+const LS = 'from_md_to_pdf_';
 let _saveTimer;
+
+function migrateLegacySettings(){
+  try{
+    const keys = [
+      'content','font','theme','paper','orient','view','uitheme',
+      'pdf-mt','pdf-mr','pdf-mb','pdf-ml','pdf-header','pdf-footer',
+      'pdf-pagenum','pdf-h1break','pdf-linkurls','customcss'
+    ];
+    const hasNewData = keys.some(key => localStorage.getItem(LS + key) !== null);
+    if(hasNewData) return;
+
+    const legacyEntries = keys
+      .map(key => [key, localStorage.getItem(LEGACY_LS + key)])
+      .filter(([, value]) => value !== null);
+
+    if(!legacyEntries.length) return;
+
+    legacyEntries.forEach(([key, value]) => localStorage.setItem(LS + key, value));
+  }catch(e){}
+}
 
 function saveSettings(){
   clearTimeout(_saveTimer);
@@ -1084,6 +1108,7 @@ function saveSettings(){
 
 function restoreSettings(){
   try{
+    migrateLegacySettings();
     const content = localStorage.getItem(LS+'content');
     const font    = localStorage.getItem(LS+'font');
     const theme   = localStorage.getItem(LS+'theme');
@@ -1605,8 +1630,21 @@ function applyCustomCss(){
   el.textContent = document.getElementById('custom-css-input')?.value || '';
 }
 
-/* ── Download PDF ── */
-async function doDownloadPDF(){
+function supportsPdfClipboard(){
+  return window.isSecureContext && typeof ClipboardItem !== 'undefined' && !!navigator.clipboard?.write;
+}
+
+function refreshPdfClipboardButtons(){
+  const supported = supportsPdfClipboard();
+  [document.getElementById('copyPdfBtn'), document.getElementById('copyPdfSettingsBtn')].forEach(btn=>{
+    if(!btn) return;
+    btn.disabled = !supported;
+    btn.title = supported ? 'Copy generated PDF to clipboard' : 'Copy PDF requires a secure context (HTTPS or localhost) and browser clipboard support';
+    btn.setAttribute('aria-disabled', supported ? 'false' : 'true');
+  });
+}
+
+async function generatePdfBlob(){
   const content = document.getElementById('md-body');
   if(!content||!edEl.value.trim()){alert('Please enter some Markdown first!');return}
 
@@ -1628,37 +1666,65 @@ async function doDownloadPDF(){
   };
 
   try{
+    let worker = html2pdf().set(opt).from(el).toPdf();
     const needsPostProcess = ps.pageNum || ps.header || ps.footer;
     if(needsPostProcess){
-      await html2pdf()
-        .set(opt)
-        .from(el)
-        .toPdf()
-        .get('pdf')
-        .then(pdf=>{
-          const pages = pdf.internal.getNumberOfPages();
-          const pw    = pdf.internal.pageSize.getWidth();
-          const ph    = pdf.internal.pageSize.getHeight();
-          for(let i=1;i<=pages;i++){
-            pdf.setPage(i);
-            pdf.setFontSize(8.5);
-            pdf.setTextColor(156,163,175);
-            if(ps.header) pdf.text(ps.header, pw/2, 6, {align:'center'});
-            if(ps.footer) pdf.text(ps.footer, pw/2, ph-4, {align:'center'});
-            if(ps.pageNum) pdf.text(`${i} / ${pages}`, pw/2, ph-(ps.footer?8:4), {align:'center'});
-          }
-        })
-        .save();
-    } else {
-      await html2pdf().set(opt).from(el).save();
+      worker = worker.get('pdf').then(pdf=>{
+        const pages = pdf.internal.getNumberOfPages();
+        const pw    = pdf.internal.pageSize.getWidth();
+        const ph    = pdf.internal.pageSize.getHeight();
+        for(let i=1;i<=pages;i++){
+          pdf.setPage(i);
+          pdf.setFontSize(8.5);
+          pdf.setTextColor(156,163,175);
+          if(ps.header) pdf.text(ps.header, pw/2, 6, {align:'center'});
+          if(ps.footer) pdf.text(ps.footer, pw/2, ph-4, {align:'center'});
+          if(ps.pageNum) pdf.text(`${i} / ${pages}`, pw/2, ph-(ps.footer?8:4), {align:'center'});
+        }
+      });
     }
+
+    const blob = await worker.outputPdf('blob');
+    return {blob, filename: opt.filename};
+  }catch(e){
+    throw e;
+  }finally{
+    document.body.removeChild(wrapper);
+    showOverlay(false);
+  }
+}
+
+/* ── Download PDF ── */
+async function doDownloadPDF(){
+  try{
+    const pdf = await generatePdfBlob();
+    if(!pdf) return;
+    saveAs(pdf.blob, pdf.filename);
     toast('PDF downloaded!');
   }catch(e){
     console.error(e);
     toast('PDF error — try again');
-  }finally{
-    document.body.removeChild(wrapper);
-    showOverlay(false);
+  }
+}
+
+async function doCopyPDF(){
+  if(!supportsPdfClipboard()){
+    toast('Copy PDF requires HTTPS or localhost with clipboard support');
+    return;
+  }
+
+  try{
+    const pdf = await generatePdfBlob();
+    if(!pdf) return;
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'application/pdf': pdf.blob
+      })
+    ]);
+    toast('PDF copied to clipboard');
+  }catch(e){
+    console.error(e);
+    toast('Copy PDF failed — try download instead');
   }
 }
 
@@ -1765,7 +1831,7 @@ async function doExportHTML(){
 <body>
 ${bodyHtml}
 <footer style="margin-top:2em;padding-top:1em;border-top:1px solid #e5e7eb;font-size:.8em;color:#9ca3af;text-align:center">
-    Generated with <a href="https://github.com/reachtokarthikr/md-to-pdf-docx-html">ConvertMD2PDF</a>
+  Generated with <a href="https://github.com/reachtokarthikr/md-to-pdf-docx-html">From MD To PDF</a>
 </footer>
 </body>
 </html>`;
@@ -2026,7 +2092,7 @@ function toast(msg){
 
 /* ── Templates ── */
 const TPLS={
-sample:`# Welcome to ConvertMD2PDF
+sample:`# Welcome to From MD To PDF
 
 This is a **sample document** to showcase the converter's features.
 
@@ -2183,7 +2249,7 @@ In conclusion, this analysis has shown that...
 
 ---
 
-*Report generated with ConvertMD2PDF*
+*Report generated with From MD To PDF*
 `,
 meeting:`# Meeting Notes: Team Sync
 
@@ -2395,6 +2461,7 @@ if(!restored){
   applyTheme(); applyFont(); applyView();
   render();
 }
+refreshPdfClipboardButtons();
 updateCursor();
 </script>
 <footer style="text-align:center;padding:1.2em;font-size:.8em;color:var(--color-faint);border-top:1px solid var(--border);margin-top:0">

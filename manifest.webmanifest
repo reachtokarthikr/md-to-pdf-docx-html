@@ -1,6 +1,6 @@
 {
-  "name": "ConvertMD2PDF",
-  "short_name": "MD2PDF",
+  "name": "From MD To PDF",
+  "short_name": "From MD To PDF",
   "description": "Browser-based Markdown to PDF, DOCX, and HTML converter",
   "start_url": "./",
   "display": "standalone",
