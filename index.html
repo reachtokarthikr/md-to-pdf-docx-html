@@ -9,6 +9,11 @@
 <meta name="theme-color" content="#6366f1"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="From MD To PDF"/>
+<script>
+/* Bump APP_VERSION on every publish; bump STORAGE_VERSION only when saved data must reset. */
+const APP_VERSION = '2026.05.13.1';
+const STORAGE_VERSION = '1';
+</script>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -641,7 +646,7 @@ kbd{
   <div class="sep" role="separator"></div>
   <button class="tb" title="Undo (Ctrl+Z)" aria-label="Undo" onclick="cm.undo();render()">↩</button>
   <button class="tb" title="Redo (Ctrl+Y)" aria-label="Redo" onclick="cm.redo();render()">↪</button>
-  <button class="tb" title="Copy rendered HTML" aria-label="Copy as HTML" onclick="copyHtml()">⎘ HTML</button>
+  <button class="tb" title="Copy formatted content" aria-label="Copy formatted content" onclick="copyContent()">⎘ Content</button>
   <div class="sep" role="separator"></div>
   <div class="dd" id="dd-tpl">
     <button class="tb" onclick="toggleDd('dd-tpl')" aria-haspopup="true" aria-expanded="false">Templates ▾</button>
@@ -764,10 +769,9 @@ kbd{
   <button class="btn btn-out" onclick="showHelp()" title="Keyboard Shortcuts (Ctrl+/)" aria-label="Keyboard shortcuts">? Help</button>
   <button class="btn btn-del" onclick="clearAll()" title="Clear editor" aria-label="Clear editor">✕ Clear</button>
   <div class="actsp"></div>
-  <button class="btn btn-out" onclick="copyHtml()" aria-label="Copy HTML to clipboard">⎘ Copy HTML</button>
+  <button class="btn btn-out" onclick="copyContent()" aria-label="Copy formatted content to clipboard">⎘ Copy Content</button>
   <button class="btn btn-out" onclick="doExportHTML()" aria-label="Export as HTML file">Export HTML</button>
   <button class="btn btn-out" onclick="doExportDOCX()" aria-label="Export as DOCX file">Export DOCX</button>
-  <button class="btn btn-out" id="copyPdfBtn" onclick="doCopyPDF()" aria-label="Copy PDF to clipboard">⎘ Copy PDF</button>
   <button class="btn btn-out" onclick="showPdfSettings()" title="PDF &amp; Export Settings" aria-label="PDF settings">⚙ Settings</button>
   <button class="btn btn-pri" id="pdfBtn" onclick="doDownloadPDF()" title="Download PDF (Ctrl+P)" aria-label="Download PDF">⬇ Download PDF</button>
 </div>
@@ -883,7 +887,7 @@ $math$     $$display math$$
       <div class="settings-divider"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn btn-out" onclick="resetPdfSettings()">Reset defaults</button>
-        <button class="btn btn-out" id="copyPdfSettingsBtn" onclick="hidePdfSettings();doCopyPDF()">⎘ Copy PDF now</button>
+        <button class="btn btn-out" onclick="hidePdfSettings();copyContent()">⎘ Copy Content now</button>
         <button class="btn btn-pri" onclick="hidePdfSettings();doDownloadPDF()">⬇ Download PDF now</button>
       </div>
     </div>
@@ -1054,7 +1058,31 @@ function applyView(){
 /* ── Autosave / restore ── */
 const LEGACY_LS = 'cmd2pdf_';
 const LS = 'from_md_to_pdf_';
+const STORAGE_VERSION_KEY = LS + 'storage_version';
 let _saveTimer;
+
+function clearAppStorageKeys(){
+  const prefixes = [LS, LEGACY_LS];
+  const keys = [];
+  for(let i=0;i<localStorage.length;i++){
+    const key = localStorage.key(i);
+    if(key && prefixes.some(prefix => key.startsWith(prefix))) keys.push(key);
+  }
+  keys.forEach(key => localStorage.removeItem(key));
+}
+
+function syncStorageVersion(){
+  try{
+    const savedVersion = localStorage.getItem(STORAGE_VERSION_KEY);
+    if(savedVersion === STORAGE_VERSION) return;
+
+    if(savedVersion !== null){
+      clearAppStorageKeys();
+    }
+
+    localStorage.setItem(STORAGE_VERSION_KEY, STORAGE_VERSION);
+  }catch(e){}
+}
 
 function migrateLegacySettings(){
   try{
@@ -1108,6 +1136,7 @@ function saveSettings(){
 
 function restoreSettings(){
   try{
+    syncStorageVersion();
     migrateLegacySettings();
     const content = localStorage.getItem(LS+'content');
     const font    = localStorage.getItem(LS+'font');
@@ -1440,9 +1469,39 @@ function newDoc(){
   if(cm.getValue().trim() && !confirm('Start a new document? Current content will be lost.'))return;
   cm.setValue('# New Document\n\nStart writing here…\n'); cm.clearHistory(); render(); toast('New document');
 }
-function copyHtml(){
-  const content = document.getElementById('md-body').innerHTML;
-  navigator.clipboard.writeText(content).then(()=>toast('HTML copied to clipboard')).catch(()=>toast('Copy failed'));
+async function copyContent(){
+  const content = document.getElementById('md-body');
+  if(!content || !content.textContent.trim()){
+    toast('Nothing to copy');
+    return;
+  }
+
+  const html = content.innerHTML;
+  const text = content.innerText || content.textContent || '';
+
+  try{
+    if(window.isSecureContext && typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write){
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], {type:'text/html'}),
+          'text/plain': new Blob([text], {type:'text/plain'})
+        })
+      ]);
+      toast('Formatted content copied');
+      return;
+    }
+
+    if(navigator.clipboard?.writeText){
+      await navigator.clipboard.writeText(text);
+      toast('Text copied');
+      return;
+    }
+
+    throw new Error('Clipboard API unavailable');
+  }catch(e){
+    console.error(e);
+    toast('Copy failed');
+  }
 }
 
 /* ── Mobile swap ── */
@@ -1630,20 +1689,6 @@ function applyCustomCss(){
   el.textContent = document.getElementById('custom-css-input')?.value || '';
 }
 
-function supportsPdfClipboard(){
-  return window.isSecureContext && typeof ClipboardItem !== 'undefined' && !!navigator.clipboard?.write;
-}
-
-function refreshPdfClipboardButtons(){
-  const supported = supportsPdfClipboard();
-  [document.getElementById('copyPdfBtn'), document.getElementById('copyPdfSettingsBtn')].forEach(btn=>{
-    if(!btn) return;
-    btn.disabled = !supported;
-    btn.title = supported ? 'Copy generated PDF to clipboard' : 'Copy PDF requires a secure context (HTTPS or localhost) and browser clipboard support';
-    btn.setAttribute('aria-disabled', supported ? 'false' : 'true');
-  });
-}
-
 async function generatePdfBlob(){
   const content = document.getElementById('md-body');
   if(!content||!edEl.value.trim()){alert('Please enter some Markdown first!');return}
@@ -1704,27 +1749,6 @@ async function doDownloadPDF(){
   }catch(e){
     console.error(e);
     toast('PDF error — try again');
-  }
-}
-
-async function doCopyPDF(){
-  if(!supportsPdfClipboard()){
-    toast('Copy PDF requires HTTPS or localhost with clipboard support');
-    return;
-  }
-
-  try{
-    const pdf = await generatePdfBlob();
-    if(!pdf) return;
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        'application/pdf': pdf.blob
-      })
-    ]);
-    toast('PDF copied to clipboard');
-  }catch(e){
-    console.error(e);
-    toast('Copy PDF failed — try download instead');
   }
 }
 
@@ -2461,7 +2485,6 @@ if(!restored){
   applyTheme(); applyFont(); applyView();
   render();
 }
-refreshPdfClipboardButtons();
 updateCursor();
 </script>
 <footer style="text-align:center;padding:1.2em;font-size:.8em;color:var(--color-faint);border-top:1px solid var(--border);margin-top:0">
@@ -2470,7 +2493,7 @@ updateCursor();
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js')
+    navigator.serviceWorker.register(`./sw.js?v=${encodeURIComponent(APP_VERSION)}`, {updateViaCache:'none'})
       .then(r=>console.log('[SW] registered',r.scope))
       .catch(e=>console.warn('[SW] registration failed',e));
   });

@@ -1,4 +1,6 @@
-const CACHE = 'from-md-to-pdf-v1';
+const APP_VERSION = new URL(self.location.href).searchParams.get('v') || 'dev';
+const CACHE_PREFIX = 'from-md-to-pdf-';
+const CACHE = `${CACHE_PREFIX}${APP_VERSION}`;
 
 const PRECACHE = [
   './',
@@ -47,7 +49,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+        keys.filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE).map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
   );
@@ -65,8 +67,7 @@ self.addEventListener('fetch', e => {
   const isHtmlOrApp = sameOrigin && (
     url.pathname === '/' ||
     url.pathname.endsWith('.html') ||
-    url.pathname.endsWith('/sw.js') ||
-    url.pathname.endsWith('/manifest.webmanifest')
+    url.pathname.endsWith('/sw.js')
   );
 
   if(isHtmlOrApp){

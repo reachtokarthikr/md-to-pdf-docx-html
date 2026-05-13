@@ -13,7 +13,7 @@ A powerful, single-file browser-based Markdown converter that transforms your ma
 - 📝 **Live Preview** — Split-pane editor with real-time markdown rendering
 - ✍️ **CodeMirror Editor** — Markdown syntax highlighting, line numbers, real undo/redo history
 - 📄 **Multiple Export Formats** — PDF, DOCX (Word), and standalone HTML
-- 📋 **Clipboard Actions** — Copy rendered HTML or generated PDF directly to the clipboard
+- 📋 **Clipboard Actions** — Copy rendered preview content as formatted text to the clipboard
 - 🎨 **Three Themes** — Modern, Inter, and Academic styling + light/dark UI toggle
 - 🧮 **Math Support** — LaTeX rendering via KaTeX
 - 📊 **Diagrams** — Mermaid diagrams (flowcharts, sequences, gantt charts, etc.)
